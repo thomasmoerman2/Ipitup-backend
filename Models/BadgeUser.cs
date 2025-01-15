@@ -1,13 +1,9 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Newtonsoft.Json;
-
+namespace Ipitup_backend.Models;
 [Table("BadgeUser")]
 public class BadgeUser
 {
     public int BadgeId { get; set; }
     public int UserId { get; set; }
-
     [ForeignKey("BadgeId")]
     public Badge? Badge { get; set; }
     [ForeignKey("UserId")]

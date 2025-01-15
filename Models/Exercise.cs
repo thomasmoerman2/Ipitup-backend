@@ -1,7 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Newtonsoft.Json;
-
+namespace Ipitup_backend.Models;
 [Table("Exercise")]
 public class Exercise
 {
@@ -11,7 +8,6 @@ public class Exercise
     public string ExerciseName { get; set; } = string.Empty;
     public ExerciseType ExerciseType { get; set; }
 }
-
 public enum ExerciseType
 {
     Armen,

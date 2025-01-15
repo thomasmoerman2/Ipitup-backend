@@ -1,0 +1,15 @@
+global using Microsoft.Azure.Functions.Worker;
+global using Microsoft.Extensions.Hosting;
+global using Microsoft.Extensions.DependencyInjection;
+global using System.ComponentModel.DataAnnotations;
+global using System.ComponentModel.DataAnnotations.Schema;
+global using Newtonsoft.Json;
+global using Ipitup_backend.Models;
+global using Microsoft.AspNetCore.Http;
+global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.Extensions.Logging;
+global using Ipitup.Functions;
+global using Microsoft.EntityFrameworkCore;
+global using Ipitup_backend.Context;
+global using System;
+global using System.Reflection;

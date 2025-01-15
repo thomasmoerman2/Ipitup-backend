@@ -1,7 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Newtonsoft.Json;
-
+namespace Ipitup_backend.Models;
 [Table("User")]
 public class User
 {
@@ -17,7 +14,6 @@ public class User
     public int DailyStreak { get; set; } = 0;
     public DateTime BirthDate { get; set; }
 }
-
 public enum AccountStatus
 {
     Public,

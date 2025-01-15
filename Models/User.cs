@@ -1,35 +1,21 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 
-[Table("Users")]
+[Table("User")]
 public class User
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int UserId { get; set; }
-
-    [Required]
-    [StringLength(50)]
+    public string Avatar { get; set; } = string.Empty;
     public string UserFirstname { get; set; } = string.Empty;
-
-    [Required]
-    [StringLength(50)]
     public string UserLastname { get; set; } = string.Empty;
-
-    [Required]
-    [StringLength(100)]
-    [EmailAddress]
     public string UserEmail { get; set; } = string.Empty;
-
-    [Required]
-    [StringLength(255)]
     public string UserPassword { get; set; } = string.Empty;
-
-    [Required]
-    public AccountStatus AccountStatus { get; set; }
-
-    [Required]
-    public int DailyStreak { get; set; }
+    public AccountStatus AccountStatus { get; set; } = AccountStatus.Public;
+    public int DailyStreak { get; set; } = 0;
+    public DateTime BirthDate { get; set; }
 }
 
 public enum AccountStatus

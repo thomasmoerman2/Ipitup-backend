@@ -2,14 +2,13 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
 
-[Table("BadgeUser")]
-public class BadgeUser
+[Table("UserTotalScore")]
+public class UserTotalScore
 {
-    public int BadgeId { get; set; }
+    [Key]
     public int UserId { get; set; }
+    public int TotalScore { get; set; } = 0;
 
-    [ForeignKey("BadgeId")]
-    public Badge? Badge { get; set; }
     [ForeignKey("UserId")]
     public User? User { get; set; }
 }

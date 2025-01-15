@@ -2,23 +2,18 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
 
-[Table("Activity")]
-public class Activity
+[Table("Leaderboard")]
+public class Leaderboard
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int ActivityId { get; set; }
+    public int LeaderboardId { get; set; }
     public int UserId { get; set; }
-    public int ActivityAmount { get; set; }
-    public int ActivityDuration { get; set; }
-    public DateTime ActivityDate { get; set; } = DateTime.Now;
     public int? LocationId { get; set; }
-    public int? ExerciseId { get; set; }
+    public int Score { get; set; } = 0;
 
     [ForeignKey("UserId")]
     public User? User { get; set; }
     [ForeignKey("LocationId")]
     public Location? Location { get; set; }
-    [ForeignKey("ExerciseId")]
-    public Exercise? Exercise { get; set; }
 }

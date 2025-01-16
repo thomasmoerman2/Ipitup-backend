@@ -6,7 +6,7 @@ public class Activity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int ActivityId { get; set; }
     public int UserId { get; set; }
-    public int ActivityAmount { get; set; }
+    public int ActivityScore { get; set; }
     public int ActivityDuration { get; set; }
     public DateTime ActivityDate { get; set; } = DateTime.Now;
     public int? LocationId { get; set; }

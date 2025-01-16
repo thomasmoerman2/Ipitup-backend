@@ -6,4 +6,5 @@ public class Location
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int LocationId { get; set; }
     public string LocationName { get; set; } = string.Empty;
+    public string LocationCountry { get; set; } = string.Empty;
 }

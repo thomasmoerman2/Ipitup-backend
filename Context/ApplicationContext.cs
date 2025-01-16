@@ -5,7 +5,6 @@ public class Context : DbContext
     {
         optionsBuilder.UseMySql(Environment.GetEnvironmentVariable("SQLConnectionString"), ServerVersion.AutoDetect(Environment.GetEnvironmentVariable("SQLConnectionString")));
     }
-    // DbSet properties
     public DbSet<Activity> Activities { get; set; }
     public DbSet<Badge> Badges { get; set; }
     public DbSet<BadgeUser> BadgeUsers { get; set; }
@@ -14,15 +13,12 @@ public class Context : DbContext
     public DbSet<Leaderboard> Leaderboards { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<User> Users { get; set; }
-    public DbSet<UserTotalScore> UserTotalScores { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configure composite keys
         modelBuilder.Entity<BadgeUser>()
             .HasKey(bu => new { bu.BadgeId, bu.UserId });
         modelBuilder.Entity<Friends>()
             .HasKey(f => new { f.UserId, f.FriendId });
-        // Configure relationships
         modelBuilder.Entity<Activity>()
             .HasOne(a => a.User)
             .WithMany()
@@ -68,12 +64,6 @@ public class Context : DbContext
             .WithMany()
             .HasForeignKey(l => l.LocationId)
             .OnDelete(DeleteBehavior.SetNull);
-        modelBuilder.Entity<UserTotalScore>()
-            .HasOne(uts => uts.User)
-            .WithOne()
-            .HasForeignKey<UserTotalScore>(uts => uts.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-        // Configure unique constraints
         modelBuilder.Entity<User>()
             .HasIndex(u => u.UserEmail)
             .IsUnique();

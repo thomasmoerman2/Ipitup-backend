@@ -13,6 +13,7 @@ public class User
     public AccountStatus AccountStatus { get; set; } = AccountStatus.Public;
     public int DailyStreak { get; set; } = 0;
     public DateTime BirthDate { get; set; }
+    public int TotalScore { get; set; } = 0;
 }
 public enum AccountStatus
 {

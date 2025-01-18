@@ -1,31 +1,1 @@
-namespace Ipitup.Functions
-{
-    public class TestTrigger
-    {
-        private readonly ILogger<TestTrigger> _logger;
-        public TestTrigger(ILogger<TestTrigger> logger)
-        {
-            _logger = logger;
-        }
-        [Function("TestTrigger")]
-        public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "test")] HttpRequest req)
-        {
-            _logger.LogInformation("TestTrigger function processed a request.");
-            return new OkObjectResult(new { Message = "TestTrigger function processed a request." });
-        }
-
-        [Function("TestRegister")]
-        public async Task<IActionResult> TestRegister([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "test/register")] HttpRequest req)
-        {
-            _logger.LogInformation("TestRegister function processed a request.");
-            return new OkObjectResult(new { Message = "TestRegister function processed a request." });
-        }
-
-        [Function("TestLogin")]
-        public async Task<IActionResult> TestLogin([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "test/login")] HttpRequest req)
-        {
-            _logger.LogInformation("TestLogin function processed a request.");
-            return new OkObjectResult(new { Message = "TestLogin function processed a request." });
-        }
-    }
-}
+namespace Ipitup_backend.Functions{    public class TestTrigger    {        private readonly ILogger<TestTrigger> _logger;        public TestTrigger(ILogger<TestTrigger> logger)        {            _logger = logger;        }        [Function("TestTrigger")]        public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "test")] HttpRequest req)        {            _logger.LogInformation("TestTrigger function processed a request.");            return new OkObjectResult(new { Message = "TestTrigger function processed a request." });        }        [Function("TestRegister")]        public async Task<IActionResult> TestRegister([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "test/register")] HttpRequest req)        {            _logger.LogInformation("TestRegister function processed a request.");            return new OkObjectResult(new { Message = "TestRegister function processed a request." });        }        [Function("TestLogin")]        public async Task<IActionResult> TestLogin([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "test/login")] HttpRequest req)        {            _logger.LogInformation("TestLogin function processed a request.");            return new OkObjectResult(new { Message = "TestLogin function processed a request." });        }    }}

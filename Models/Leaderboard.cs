@@ -1,4 +1,5 @@
 namespace Ipitup_backend.Models;
+
 [Table("Leaderboard")]
 public class Leaderboard
 {
@@ -8,6 +9,7 @@ public class Leaderboard
     public int UserId { get; set; }
     public int? LocationId { get; set; }
     public int Score { get; set; } = 0;
+
     [ForeignKey("UserId")]
     public User? User { get; set; }
     [ForeignKey("LocationId")]

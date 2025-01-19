@@ -1,9 +1,15 @@
 namespace Ipitup_backend.Models;
+
 [Table("BadgeUser")]
 public class BadgeUser
 {
+    [Key]
+    [Column(Order = 0)]
     public int BadgeId { get; set; }
+    [Key]
+    [Column(Order = 1)]
     public int UserId { get; set; }
+
     [ForeignKey("BadgeId")]
     public Badge? Badge { get; set; }
     [ForeignKey("UserId")]

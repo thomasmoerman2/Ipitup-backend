@@ -5,7 +5,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Ipitup_backend.Functions
+namespace Ipitup.Functions
 {
     public class TestTrigger
     {

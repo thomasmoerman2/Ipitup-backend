@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Ipitup_backend": {
+    "Ipitup": {
       "commandName": "Project",
       "commandLineArgs": "--port 7063",
       "launchBrowser": false

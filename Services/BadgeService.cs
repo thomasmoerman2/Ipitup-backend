@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Services;
+namespace Ipitup.Services;
 public interface IBadgeService
 {
     Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId);

@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Repositories;
+namespace Ipitup.Repositories;
 public interface IFriendsRepository : IGenericRepository<Friends>
 {
     Task<IEnumerable<Friends>> GetUserFriendsAsync(int userId);

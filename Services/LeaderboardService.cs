@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Services;
+namespace Ipitup.Services;
 public interface ILeaderboardService
 {
     Task<IEnumerable<Leaderboard>> GetByLocationIdAsync(int locationId);

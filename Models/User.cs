@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Models;
+namespace Ipitup.Models;
 [Table("User")]
 public class User
 {

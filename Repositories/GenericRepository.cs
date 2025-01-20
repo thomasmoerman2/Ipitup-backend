@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Repositories;
+namespace Ipitup.Repositories;
 public interface IGenericRepository<T> where T : class
 {
     Task<IEnumerable<T>> GetAllAsync();

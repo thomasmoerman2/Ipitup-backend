@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Services;
+namespace Ipitup.Services;
 public interface IActivityService
 {
     Task<IEnumerable<Activity>> GetByUserIdAsync(int userId);

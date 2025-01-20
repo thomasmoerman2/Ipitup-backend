@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Repositories;
+namespace Ipitup.Repositories;
 public interface IBadgeRepository : IGenericRepository<Badge>
 {
     Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId);

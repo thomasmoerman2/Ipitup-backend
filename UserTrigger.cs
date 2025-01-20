@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
-namespace Ipitup_backend.Functions
+namespace Ipitup.Functions
 {
     public class UserTrigger
     {
@@ -30,17 +30,17 @@ namespace Ipitup_backend.Functions
                 {
                     return new BadRequestObjectResult(new { message = "Invalid JSON format" });
                 }
-    
+
                 if (userRequest.UserEmail == "" || userRequest.UserPassword == "")
                 {
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
                 }
 
-                var user = await _userService.AuthenticateAsync(userRequest.UserEmail, userRequest.UserPassword);
+                var user = await _userService.CheckLoginAsync(userRequest.UserEmail, userRequest.UserPassword);
 
-                if (user == null)
+                if (!user)
                 {
-                    return new BadRequestObjectResult(new { message = "User not found" });
+                    return new BadRequestObjectResult(new { message = "Invalid credentials" });
                 }
 
                 return new OkObjectResult(new

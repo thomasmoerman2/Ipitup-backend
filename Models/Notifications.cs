@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Models;
+namespace Ipitup.Models;
 [Table("Notifications")]
 public class Notifications
 {

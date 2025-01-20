@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Services;
+namespace Ipitup.Services;
 public interface IFriendsService
 {
     Task<IEnumerable<Friends>> GetUserFriendsAsync(int userId);

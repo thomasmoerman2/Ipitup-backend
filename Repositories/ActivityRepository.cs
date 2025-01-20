@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Repositories;
+namespace Ipitup.Repositories;
 public interface IActivityRepository : IGenericRepository<Activity>
 {
     Task<IEnumerable<Activity>> GetByUserIdAsync(int userId);

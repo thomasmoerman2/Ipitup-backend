@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Repositories;
+namespace Ipitup.Repositories;
 public interface ILeaderboardRepository : IGenericRepository<Leaderboard>
 {
     Task<IEnumerable<Leaderboard>> GetByLocationIdAsync(int locationId);

@@ -1,4 +1,4 @@
-namespace Ipitup_backend.Context;
+namespace Ipitup.Context;
 public class ApplicationContext : DbContext
 {
     private readonly IConfiguration _configuration;

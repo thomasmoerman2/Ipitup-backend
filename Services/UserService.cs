@@ -1,14 +1,13 @@
-namespace Ipitup_backend.Services;
+namespace Ipitup.Services;
 public interface IUserService
 {
-    Task<User> AuthenticateAsync(string email, string password);
     Task<bool> RegisterAsync(User user);
-    Task<User?> GetByEmailAsync(string email);
     Task<User?> GetByIdAsync(int id);
     Task<IEnumerable<User>> GetAllAsync();
     Task<bool> UpdateUserAsync(User user);
     Task<bool> DeleteUserAsync(int userId);
     Task<bool> EmailExistsAsync(string email);
+    Task<bool> CheckLoginAsync(string email, string password);
 }
 public class UserService : IUserService
 {
@@ -17,22 +16,15 @@ public class UserService : IUserService
     {
         _userRepository = userRepository;
     }
-    public async Task<User> AuthenticateAsync(string email, string password)
-    {
-        var user = await _userRepository.AuthenticateAsync(email, password);
-        if (user == null)
-            return null;
-        return user;
-    }
     public async Task<bool> RegisterAsync(User user)
     {
         if (await EmailExistsAsync(user.UserEmail))
             return false;
         return await _userRepository.AddNewUserAsync(user);
     }
-    public async Task<User?> GetByEmailAsync(string email)
+    public async Task<bool> CheckLoginAsync(string email, string password)
     {
-        return await _userRepository.GetByEmailAsync(email);
+        return await _userRepository.CheckLoginAsync(email, password);
     }
     public async Task<User?> GetByIdAsync(int id)
     {
@@ -60,7 +52,6 @@ public class UserService : IUserService
     }
     public async Task<bool> EmailExistsAsync(string email)
     {
-        var user = await GetByEmailAsync(email);
-        return user != null;
+        return await _userRepository.GetByEmailAsync(email);
     }
 }

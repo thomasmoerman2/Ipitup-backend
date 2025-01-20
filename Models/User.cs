@@ -4,6 +4,7 @@ public class User
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [JsonProperty("userid")]
     public int UserId { get; set; }
     [Required]
     [StringLength(255)]
@@ -25,10 +26,13 @@ public class User
     [StringLength(255)]
     [JsonProperty("password")]
     public string UserPassword { get; set; } = string.Empty;
+    [JsonProperty("accountstatus")]
     public AccountStatus AccountStatus { get; set; } = AccountStatus.Public;
+    [JsonProperty("dailystreak")]
     public int DailyStreak { get; set; } = 0;
     [JsonProperty("birthdate")]
     public DateTime BirthDate { get; set; }
+    [JsonProperty("totalscore")]
     public int TotalScore { get; set; } = 0;
 }
 public enum AccountStatus

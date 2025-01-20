@@ -28,17 +28,16 @@ namespace Ipitup.Functions
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
                 }
                 var user = await _userService.CheckLoginAuth(userRequest.UserEmail, userRequest.UserPassword);
-                if (!user)
+                if (user == null)
                 {
                     return new BadRequestObjectResult(new { message = "Invalid credentials" });
                 }
                 return new OkObjectResult(new
                 {
-                    message = "UserTrigger worked!",
+                    status = 200,
                     body = new
                     {
-                        username = userRequest.UserEmail,
-                        password = userRequest.UserPassword
+                        userId = user.UserId,
                     }
                 });
             }
@@ -63,6 +62,12 @@ namespace Ipitup.Functions
                 if (userRequest.UserEmail == "" || userRequest.UserPassword == "" || userRequest.UserFirstname == "" || userRequest.UserLastname == "" || userRequest.Avatar == "" || userRequest.BirthDate == DateTime.MinValue)
                 {
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
+                }
+
+                var emailExists = await _userService.CheckEmailAlreadyExists(userRequest.UserEmail);
+                if (emailExists)
+                {
+                    return new BadRequestObjectResult(new { message = "User already exists" });
                 }
                 var user = await _userService.AddUser(userRequest);
                 if (user == null)

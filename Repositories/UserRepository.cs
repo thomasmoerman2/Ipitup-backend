@@ -3,7 +3,7 @@ public interface IUserRepository
 {
     Task<bool> CheckConnection();
     Task<bool> CheckEmailAlreadyExists(string email);
-    Task<bool> CheckLoginAuth(string email, string password);
+    Task<User> CheckLoginAuth(string email, string password);
     Task<User> AddUser(User user);
     Task<User?> GetUserByIdAsync(int userId);
     Task<IEnumerable<User>> GetAllUsersAsync();
@@ -46,21 +46,35 @@ public class UserRepository : IUserRepository
         }
         catch (Exception ex)
         {
-            throw new Exception("Failed to check email existence", ex);
+            throw new Exception("Failed to check email existence or mail already exists", ex);
         }
     }
-    public async Task<bool> CheckLoginAuth(string email, string password)
+    public async Task<User> CheckLoginAuth(string email, string password)
     {
-
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var command = new MySqlCommand("SELECT COUNT(*) FROM User WHERE userEmail = @email AND userPassword = @password", connection);
+            var command = new MySqlCommand("SELECT * FROM User WHERE userEmail = @email AND userPassword = @password", connection);
             command.Parameters.AddWithValue("@email", email);
             command.Parameters.AddWithValue("@password", password);
-            var result = await command.ExecuteScalarAsync();
-            int resultInt = Convert.ToInt32(result);
-            return resultInt > 0;
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                if (await reader.ReadAsync())
+                {
+                    return new User
+                    {
+                        UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                        UserEmail = reader.GetString(reader.GetOrdinal("userEmail")),
+                        UserPassword = reader.GetString(reader.GetOrdinal("userPassword")),
+                        UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                        UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                        Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                        BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate"))
+                    };
+                }
+                return null;
+            }
         }
     }
     public async Task<User> AddUser(User user)

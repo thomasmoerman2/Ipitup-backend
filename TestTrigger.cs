@@ -38,8 +38,8 @@ namespace Ipitup.Functions
                 _logger.LogInformation($"Password: {loginRequest.UserPassword}");
                 return new OkObjectResult(new
                 {
-                    message = "PostLoginTrigger worked!",
-                    receivedData = new
+                    status = 200,
+                    body = new
                     {
                         email = loginRequest.UserEmail,
                         password = loginRequest.UserPassword

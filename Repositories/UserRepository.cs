@@ -41,48 +41,61 @@ public class UserRepository : IUserRepository
                 var command = new MySqlCommand("SELECT COUNT(*) FROM User WHERE userEmail = @email", connection);
                 command.Parameters.AddWithValue("@email", email);
                 var result = await command.ExecuteScalarAsync();
-                return result != null && (int)result > 0;
+
+                if (result != null && int.TryParse(result.ToString(), out int count))
+                {
+                    return count > 0;
+                }
+                return false;
             }
         }
         catch (Exception ex)
         {
-            throw new Exception("Failed to check email existence or mail already exists", ex);
+            throw new Exception($"Database query error in CheckEmailAlreadyExists: {ex.Message}", ex);
         }
     }
-    public async Task<User> CheckLoginAuth(string email, string password)
+
+    public async Task<User?> CheckLoginAuth(string email, string password)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var command = new MySqlCommand("SELECT * FROM User WHERE userEmail = @email AND userPassword = @password", connection);
+            var command = new MySqlCommand("SELECT * FROM User WHERE userEmail = @email", connection);
             command.Parameters.AddWithValue("@email", email);
-            command.Parameters.AddWithValue("@password", password);
 
             using (var reader = await command.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
                 {
-                    return new User
+                    var storedHashedPassword = reader.GetString(reader.GetOrdinal("userPassword"));
+                    if (BCrypt.Net.BCrypt.Verify(password, storedHashedPassword))
                     {
-                        UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                        UserEmail = reader.GetString(reader.GetOrdinal("userEmail")),
-                        UserPassword = reader.GetString(reader.GetOrdinal("userPassword")),
-                        UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
-                        UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
-                        Avatar = reader.GetString(reader.GetOrdinal("avatar")),
-                        BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate"))
-                    };
+                        return new User
+                        {
+                            UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                            UserEmail = reader.GetString(reader.GetOrdinal("userEmail")),
+                            UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                            UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                            Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                            BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate"))
+                        };
+                    }
                 }
-                return null;
             }
         }
+        return null; // Return null als de verificatie mislukt
     }
+
+
     public async Task<User> AddUser(User user)
     {
         if (!await CheckConnection())
         {
             throw new Exception("Failed to connect to database");
         }
+
+        // Hash het wachtwoord voordat het wordt opgeslagen
+        user.UserPassword = BCrypt.Net.BCrypt.HashPassword(user.UserPassword);
 
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -104,8 +117,8 @@ public class UserRepository : IUserRepository
                 throw new Exception("Failed to add user");
             }
         }
-
     }
+
 
     public async Task<IEnumerable<User>> GetAllUsersAsync()
     {

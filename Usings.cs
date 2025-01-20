@@ -19,3 +19,4 @@ global using Microsoft.AspNetCore.Components.Routing;
 global using MySql.Data;
 global using System.Reflection;
 global using MySql.Data.MySqlClient;
+global using BCrypt.Net;

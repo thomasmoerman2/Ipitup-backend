@@ -48,6 +48,7 @@ namespace Ipitup.Functions
                 return new BadRequestObjectResult(new { message = "Error processing request", error = ex.Message });
             }
         }
+
         [Function("PostUserRegister")]
         public async Task<IActionResult> PostUserRegister([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/register")] HttpRequest req)
         {
@@ -76,5 +77,53 @@ namespace Ipitup.Functions
                 return new BadRequestObjectResult(new { message = "Error processing request", error = ex.Message });
             }
         }
+
+        [Function("GetUserById")]
+        public async Task<IActionResult> GetUserById(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}")] HttpRequest req, string id)
+        {
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
+
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "User not found" });
+            }
+
+            return new OkObjectResult(user);
+        }
+
+        [Function("GetAllUsers")]
+        public async Task<IActionResult> GetAllUsers(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user")] HttpRequest req)
+        {
+            var users = await _userService.GetAllUsersAsync();
+            return new OkObjectResult(users);
+        }
+
+        [Function("GetUserByFullName")]
+        public async Task<IActionResult> GetUserByFullName(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/fullname")] HttpRequest req)
+        {
+            string? firstname = req.Query["firstname"];
+            string? lastname = req.Query["lastname"];
+
+            if (string.IsNullOrWhiteSpace(firstname) || string.IsNullOrWhiteSpace(lastname))
+            {
+                return new BadRequestObjectResult(new { message = "Firstname and Lastname are required" });
+            }
+
+            var user = await _userService.GetUserByFullNameAsync(firstname, lastname);
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "User not found" });
+            }
+
+            return new OkObjectResult(user);
+        }
+
     }
 }

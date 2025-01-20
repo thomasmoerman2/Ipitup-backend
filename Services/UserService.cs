@@ -5,6 +5,9 @@ public interface IUserService
     Task<bool> CheckEmailAlreadyExists(string email);
     Task<bool> CheckLoginAuth(string email, string password);
     Task<User> AddUser(User user);
+    Task<User?> GetUserByIdAsync(int userId);
+    Task<IEnumerable<User>> GetAllUsersAsync();
+    Task<User?> GetUserByFullNameAsync(string firstname, string lastname);
 }
 public class UserService : IUserService
 {
@@ -33,4 +36,20 @@ public class UserService : IUserService
     {
         return await _userRepository.CheckLoginAuth(email, password);
     }
+
+    public async Task<User?> GetUserByIdAsync(int userId)
+    {
+        return await _userRepository.GetUserByIdAsync(userId);
+    }
+
+    public async Task<IEnumerable<User>> GetAllUsersAsync()
+    {
+        return await _userRepository.GetAllUsersAsync();
+    }
+
+    public async Task<User?> GetUserByFullNameAsync(string firstname, string lastname)
+    {
+        return await _userRepository.GetUserByFullNameAsync(firstname, lastname);
+    }
+
 }

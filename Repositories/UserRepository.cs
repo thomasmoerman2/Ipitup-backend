@@ -5,6 +5,9 @@ public interface IUserRepository
     Task<bool> CheckEmailAlreadyExists(string email);
     Task<bool> CheckLoginAuth(string email, string password);
     Task<User> AddUser(User user);
+    Task<User?> GetUserByIdAsync(int userId);
+    Task<IEnumerable<User>> GetAllUsersAsync();
+    Task<User?> GetUserByFullNameAsync(string firstname, string lastname);
 }
 public class UserRepository : IUserRepository
 {
@@ -88,5 +91,96 @@ public class UserRepository : IUserRepository
             }
         }
 
+    }
+
+    public async Task<IEnumerable<User>> GetAllUsersAsync()
+    {
+        var users = new List<User>();
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT * FROM User", connection);
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    users.Add(new User
+                    {
+                        UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                        UserEmail = reader.GetString(reader.GetOrdinal("userEmail")),
+                        UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                        UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                        Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                        BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate")),
+                        AccountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), reader.GetString(reader.GetOrdinal("accountStatus"))),
+                        DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
+                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore"))
+                    });
+                }
+            }
+        }
+        return users;
+    }
+
+    public async Task<User?> GetUserByIdAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT * FROM User WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@userId", userId);
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                if (await reader.ReadAsync())
+                {
+                    return new User
+                    {
+                        UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                        UserEmail = reader.GetString(reader.GetOrdinal("userEmail")),
+                        UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                        UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                        Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                        BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate")),
+                        AccountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), reader.GetString(reader.GetOrdinal("accountStatus"))),
+                        DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
+                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore"))
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    public async Task<User?> GetUserByFullNameAsync(string firstname, string lastname)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT * FROM User WHERE userFirstname = @firstname AND userLastname = @lastname", connection);
+            command.Parameters.AddWithValue("@firstname", firstname);
+            command.Parameters.AddWithValue("@lastname", lastname);
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                if (await reader.ReadAsync())
+                {
+                    return new User
+                    {
+                        UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                        UserEmail = reader.GetString(reader.GetOrdinal("userEmail")),
+                        UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                        UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                        Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                        BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate")),
+                        AccountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), reader.GetString(reader.GetOrdinal("accountStatus"))),
+                        DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
+                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore"))
+                    };
+                }
+            }
+        }
+        return null;
     }
 }

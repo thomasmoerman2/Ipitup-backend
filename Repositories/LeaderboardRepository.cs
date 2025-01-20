@@ -1,33 +1,24 @@
 namespace Ipitup.Repositories;
-public interface ILeaderboardRepository : IGenericRepository<Leaderboard>
+public interface ILeaderboardRepository
 {
     Task<IEnumerable<Leaderboard>> GetByLocationIdAsync(int locationId);
     Task<List<Leaderboard>> GetTop10ByLocationIdAsync(int locationId);
     Task<List<Leaderboard>> GetTop10Async();
 }
-public class LeaderboardRepository : GenericRepository<Leaderboard>, ILeaderboardRepository
+public class LeaderboardRepository : ILeaderboardRepository
 {
-    public LeaderboardRepository(ApplicationContext context) : base(context) { }
-    public async Task<IEnumerable<Leaderboard>> GetByLocationIdAsync(int locationId)
+    public Task<IEnumerable<Leaderboard>> GetByLocationIdAsync(int locationId)
     {
-        return await _dbSet
-            .Where(l => l.LocationId == locationId)
-            .OrderByDescending(l => l.Score)
-            .ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<List<Leaderboard>> GetTop10ByLocationIdAsync(int locationId)
+
+    public Task<List<Leaderboard>> GetTop10Async()
     {
-        return await _dbSet
-            .Where(l => l.LocationId == locationId)
-            .OrderByDescending(l => l.Score)
-            .Take(10)
-            .ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<List<Leaderboard>> GetTop10Async()
+
+    public Task<List<Leaderboard>> GetTop10ByLocationIdAsync(int locationId)
     {
-        return await _dbSet
-            .OrderByDescending(l => l.Score)
-            .Take(10)
-            .ToListAsync();
+        throw new NotImplementedException();
     }
 }

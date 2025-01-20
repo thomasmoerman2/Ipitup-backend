@@ -1,50 +1,87 @@
 namespace Ipitup.Repositories;
-public interface IUserRepository : IGenericRepository<User>
+public interface IUserRepository
 {
-    Task<bool> CheckLoginAsync(string email, string password);
-    Task<User?> AuthenticateAsync(string email, string password);
-    Task<bool> AddNewUserAsync(User user);
-    new Task<User?> GetByIdAsync(int id);
-    Task<bool> GetByEmailAsync(string email);
+    Task<bool> CheckConnection();
+    Task<bool> CheckEmailAlreadyExists(string email);
+    Task<bool> CheckLoginAuth(string email, string password);
+    Task<User> AddUser(User user);
 }
-public class UserRepository : GenericRepository<User>, IUserRepository
+public class UserRepository : IUserRepository
 {
-    public UserRepository(ApplicationContext context) : base(context) { }
-    public async Task<bool> CheckLoginAsync(string email, string password)
+    private readonly string _connectionString;
+    public UserRepository()
     {
-        var user = await _dbSet.FirstOrDefaultAsync(u => u.UserEmail == email && u.UserPassword == password);
-        if (user == null) return false;
-        return true;
-
-        // TODO: Uncomment this when the password is hashed
-        // return BCrypt.Net.BCrypt.Verify(password, user.UserPassword);
+        _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString");
     }
-    public async Task<User?> AuthenticateAsync(string email, string password)
+    public async Task<bool> CheckConnection()
     {
-        var user = await _dbSet.FirstOrDefaultAsync(u => u.UserEmail == email);
-        if (user == null) return null;
-        if (BCrypt.Net.BCrypt.Verify(password, user.UserPassword))
-            return user;
-        return null;
+        try
+        {
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
     }
-    public override async Task<User> AddAsync(User user)
+    public async Task<bool> CheckEmailAlreadyExists(string email)
     {
-        user.UserPassword = BCrypt.Net.BCrypt.HashPassword(user.UserPassword);
-        return await base.AddAsync(user);
+        try
+        {
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var command = new MySqlCommand($"SELECT COUNT(*) FROM users WHERE email = @email", connection);
+                command.Parameters.AddWithValue("@email", email);
+                var result = await command.ExecuteScalarAsync();
+                return result != null && (int)result > 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to check email existence", ex);
+        }
     }
-    public async Task<bool> AddNewUserAsync(User user)
+    public async Task<bool> CheckLoginAuth(string email, string password)
     {
-        user.UserPassword = BCrypt.Net.BCrypt.HashPassword(user.UserPassword);
-        var result = await AddAsync(user);
-        return result != null;
+        try
+        {
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var command = new MySqlCommand($"SELECT COUNT(*) FROM users WHERE email = @email AND password = @password", connection);
+                command.Parameters.AddWithValue("@email", email);
+                command.Parameters.AddWithValue("@password", password);
+                var result = await command.ExecuteScalarAsync();
+                return result != null && (int)result > 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to authenticate login", ex);
+        }
     }
-    public override async Task<User?> GetByIdAsync(int id)
+    public async Task<User> AddUser(User user)
     {
-        return await _dbSet.FirstOrDefaultAsync(u => u.UserId == id);
-    }
-    public async Task<bool> GetByEmailAsync(string email)
-    {
-        var user = await _dbSet.FirstOrDefaultAsync(u => u.UserEmail == email);
-        return user != null;
+        try
+        {
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var command = new MySqlCommand($"INSERT INTO users (email, password) VALUES (@email, @password) RETURNING *", connection);
+                command.Parameters.AddWithValue("@email", user.UserEmail);
+                command.Parameters.AddWithValue("@password", user.UserPassword);
+                var result = await command.ExecuteScalarAsync();
+                return result != null ? (User)result : null;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to add user", ex);
+        }
     }
 }

@@ -1,5 +1,5 @@
 namespace Ipitup.Repositories;
-public interface IActivityRepository : IGenericRepository<Activity>
+public interface IActivityRepository
 {
     Task<IEnumerable<Activity>> GetByUserIdAsync(int userId);
     Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId);
@@ -7,29 +7,30 @@ public interface IActivityRepository : IGenericRepository<Activity>
     Task<bool> AddNewActivityAsync(Activity activity);
     Task<bool> AddUserActivityAsync(int userId, int activityId);
 }
-public class ActivityRepository : GenericRepository<Activity>, IActivityRepository
+public class ActivityRepository : IActivityRepository
 {
-    public ActivityRepository(ApplicationContext context) : base(context) { }
-    public async Task<IEnumerable<Activity>> GetByUserIdAsync(int userId)
+    public Task<bool> AddNewActivityAsync(Activity activity)
     {
-        return await _dbSet.Where(a => a.UserId == userId).ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId)
+
+    public Task<bool> AddUserActivityAsync(int userId, int activityId)
     {
-        return await _dbSet.Where(a => a.LocationId == locationId).ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId)
+
+    public Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId)
     {
-        return await _dbSet.Where(a => a.UserId == userId && a.LocationId == locationId).ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddNewActivityAsync(Activity activity)
+
+    public Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId)
     {
-        var result = await AddAsync(activity);
-        return result != null;
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddUserActivityAsync(int userId, int activityId)
+
+    public Task<IEnumerable<Activity>> GetByUserIdAsync(int userId)
     {
-        var result = await _context.ActivityUsers.AddAsync(new ActivityUser { UserId = userId, ActivityId = activityId });
-        return result != null;
+        throw new NotImplementedException();
     }
 }

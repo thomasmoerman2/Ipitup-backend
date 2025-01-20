@@ -1,13 +1,10 @@
 namespace Ipitup.Services;
 public interface IUserService
 {
-    Task<bool> AddNewUserAsync(User user);
-    Task<User?> GetByIdAsync(int id);
-    Task<IEnumerable<User>> GetAllAsync();
-    Task<bool> UpdateUserAsync(User user);
-    Task<bool> DeleteUserAsync(int userId);
-    Task<bool> EmailExistsAsync(string email);
-    Task<bool> CheckLoginAsync(string email, string password);
+    Task<bool> CheckConnection();
+    Task<bool> CheckEmailAlreadyExists(string email);
+    Task<bool> CheckLoginAuth(string email, string password);
+    Task<User> AddUser(User user);
 }
 public class UserService : IUserService
 {
@@ -16,42 +13,24 @@ public class UserService : IUserService
     {
         _userRepository = userRepository;
     }
-    public async Task<bool> AddNewUserAsync(User user)
+
+    public async Task<User> AddUser(User user)
     {
-        if (await EmailExistsAsync(user.UserEmail))
-            return false;
-        return await _userRepository.AddNewUserAsync(user);
+        return await _userRepository.AddUser(user);
     }
-    public async Task<bool> CheckLoginAsync(string email, string password)
+
+    public async Task<bool> CheckConnection()
     {
-        return await _userRepository.CheckLoginAsync(email, password);
+        return await _userRepository.CheckConnection();
     }
-    public async Task<User?> GetByIdAsync(int id)
+
+    public async Task<bool> CheckEmailAlreadyExists(string email)
     {
-        return await _userRepository.GetByIdAsync(id);
+        return await _userRepository.CheckEmailAlreadyExists(email);
     }
-    public async Task<IEnumerable<User>> GetAllAsync()
+
+    public async Task<bool> CheckLoginAuth(string email, string password)
     {
-        return await _userRepository.GetAllAsync();
-    }
-    public async Task<bool> UpdateUserAsync(User user)
-    {
-        var existingUser = await GetByIdAsync(user.UserId);
-        if (existingUser == null)
-            return false;
-        await _userRepository.UpdateAsync(user);
-        return true;
-    }
-    public async Task<bool> DeleteUserAsync(int userId)
-    {
-        var user = await GetByIdAsync(userId);
-        if (user == null)
-            return false;
-        await _userRepository.DeleteAsync(userId);
-        return true;
-    }
-    public async Task<bool> EmailExistsAsync(string email)
-    {
-        return await _userRepository.GetByEmailAsync(email);
+        return await _userRepository.CheckLoginAuth(email, password);
     }
 }

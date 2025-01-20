@@ -14,3 +14,8 @@ global using Ipitup.Repositories;
 global using Microsoft.Extensions.Configuration;
 global using Ipitup.Services;
 global using Ipitup.Models;
+global using Ipitup.Functions;
+global using Microsoft.AspNetCore.Components.Routing;
+global using MySql.Data;
+global using System.Reflection;
+global using MySql.Data.MySqlClient;

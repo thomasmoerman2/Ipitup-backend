@@ -1,14 +1,10 @@
 namespace Ipitup.Context;
-using Microsoft.EntityFrameworkCore;
-
 public class ApplicationContext : DbContext
 {
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseMySql(Environment.GetEnvironmentVariable("SQLConnectionString"), ServerVersion.AutoDetect(Environment.GetEnvironmentVariable("SQLConnectionString")));
     }
-
-
     public DbSet<Activity> Activities { get; set; }
     public DbSet<Badge> Badges { get; set; }
     public DbSet<BadgeUser> BadgeUsers { get; set; }

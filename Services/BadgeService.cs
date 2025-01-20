@@ -10,37 +10,33 @@ public interface IBadgeService
 }
 public class BadgeService : IBadgeService
 {
-    private readonly IBadgeRepository _badgeRepository;
-    public BadgeService(IBadgeRepository badgeRepository)
+    public Task<bool> AddBadgeAsync(Badge badge)
     {
-        _badgeRepository = badgeRepository;
+        throw new NotImplementedException();
     }
-    public async Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId)
+
+    public Task<bool> AddUserBadgeAsync(int userId, int badgeId)
     {
-        return await _badgeRepository.GetUserBadgesAsync(userId);
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddBadgeAsync(Badge badge)
+
+    public Task<List<Badge>> GetAllBadgesAsync()
     {
-        return await _badgeRepository.AddNewBadgeAsync(badge);
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddUserBadgeAsync(int userId, int badgeId)
+
+    public Task<List<Badge>> GetLatest8BadgesAsync(int userId)
     {
-        // Check if user already has the badge
-        if (await HasBadgeAsync(userId, badgeId))
-            return false;
-        return await _badgeRepository.AddUserBadgeAsync(userId, badgeId);
+        throw new NotImplementedException();
     }
-    public async Task<List<Badge>> GetAllBadgesAsync()
+
+    public Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId)
     {
-        return await _badgeRepository.GetAllBadgesAsync();
+        throw new NotImplementedException();
     }
-    public async Task<List<Badge>> GetLatest8BadgesAsync(int userId)
+
+    public Task<bool> HasBadgeAsync(int userId, int badgeId)
     {
-        return await _badgeRepository.GetLatest8BadgeByUserIdAsync(userId);
-    }
-    public async Task<bool> HasBadgeAsync(int userId, int badgeId)
-    {
-        var userBadges = await GetUserBadgesAsync(userId);
-        return userBadges.Any(b => b.BadgeId == badgeId);
+        throw new NotImplementedException();
     }
 }

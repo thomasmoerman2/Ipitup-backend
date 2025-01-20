@@ -1,51 +1,31 @@
 namespace Ipitup.Repositories;
-public interface IFriendsRepository : IGenericRepository<Friends>
+public interface IFriendsRepository
+
 {
     Task<IEnumerable<Friends>> GetUserFriendsAsync(int userId);
     Task<bool> AddFriendAsync(int userId, int friendId);
     Task<bool> AcceptFriendRequestAsync(int userId, int friendId);
     Task<bool> RemoveFriendAsync(int userId, int friendId);
 }
-public class FriendsRepository : GenericRepository<Friends>, IFriendsRepository
+public class FriendsRepository : IFriendsRepository
 {
-    public FriendsRepository(ApplicationContext context) : base(context) { }
-    public async Task<IEnumerable<Friends>> GetUserFriendsAsync(int userId)
+    public Task<bool> AcceptFriendRequestAsync(int userId, int friendId)
     {
-        return await _dbSet
-            .Where(f => (f.UserId == userId || f.FriendId == userId) && f.Status == FriendStatus.Accepted)
-            .ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddFriendAsync(int userId, int friendId)
+
+    public Task<bool> AddFriendAsync(int userId, int friendId)
     {
-        var friendship = new Friends
-        {
-            UserId = userId,
-            FriendId = friendId,
-            Status = FriendStatus.Waiting
-        };
-        var result = await AddAsync(friendship);
-        return result != null;
+        throw new NotImplementedException();
     }
-    public async Task<bool> AcceptFriendRequestAsync(int userId, int friendId)
+
+    public Task<IEnumerable<Friends>> GetUserFriendsAsync(int userId)
     {
-        var friendship = await _dbSet
-            .FirstOrDefaultAsync(f => f.UserId == friendId && f.FriendId == userId);
-        if (friendship == null)
-            return false;
-        friendship.Status = FriendStatus.Accepted;
-        await UpdateAsync(friendship);
-        return true;
+        throw new NotImplementedException();
     }
-    public async Task<bool> RemoveFriendAsync(int userId, int friendId)
+
+    public Task<bool> RemoveFriendAsync(int userId, int friendId)
     {
-        var friendship = await _dbSet
-            .FirstOrDefaultAsync(f =>
-                (f.UserId == userId && f.FriendId == friendId) ||
-                (f.UserId == friendId && f.FriendId == userId));
-        if (friendship == null)
-            return false;
-        _dbSet.Remove(friendship);
-        await _context.SaveChangesAsync();
-        return true;
+        throw new NotImplementedException();
     }
 }

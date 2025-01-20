@@ -12,46 +12,43 @@ public interface IActivityService
 }
 public class ActivityService : IActivityService
 {
-    private readonly IActivityRepository _activityRepository;
-    public ActivityService(IActivityRepository activityRepository)
+    public Task<bool> AddActivityAsync(Activity activity)
     {
-        _activityRepository = activityRepository;
+        throw new NotImplementedException();
     }
-    public async Task<IEnumerable<Activity>> GetByUserIdAsync(int userId)
+
+    public Task<bool> AddUserActivityAsync(int userId, int activityId)
     {
-        return await _activityRepository.GetByUserIdAsync(userId);
+        throw new NotImplementedException();
     }
-    public async Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId)
+
+    public Task<bool> DeleteActivityAsync(int activityId)
     {
-        return await _activityRepository.GetByLocationIdAsync(locationId);
+        throw new NotImplementedException();
     }
-    public async Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId)
+
+    public Task<Activity?> GetActivityByIdAsync(int activityId)
     {
-        return await _activityRepository.GetByUserIdAndLocationIdAsync(userId, locationId);
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddActivityAsync(Activity activity)
+
+    public Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId)
     {
-        return await _activityRepository.AddNewActivityAsync(activity);
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddUserActivityAsync(int userId, int activityId)
+
+    public Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId)
     {
-        return await _activityRepository.AddUserActivityAsync(userId, activityId);
+        throw new NotImplementedException();
     }
-    public async Task<bool> DeleteActivityAsync(int activityId)
+
+    public Task<IEnumerable<Activity>> GetByUserIdAsync(int userId)
     {
-        var activity = await GetActivityByIdAsync(activityId);
-        if (activity == null)
-            return false;
-        await _activityRepository.DeleteAsync(activityId);
-        return true;
+        throw new NotImplementedException();
     }
-    public async Task<Activity?> GetActivityByIdAsync(int activityId)
+
+    public Task<int> GetUserTotalScoreAsync(int userId)
     {
-        return await _activityRepository.GetByIdAsync(activityId);
-    }
-    public async Task<int> GetUserTotalScoreAsync(int userId)
-    {
-        var activities = await GetByUserIdAsync(userId);
-        return activities.Sum(a => a.ActivityScore);
+        throw new NotImplementedException();
     }
 }

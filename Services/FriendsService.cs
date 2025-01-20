@@ -8,25 +8,23 @@ public interface IFriendsService
 }
 public class FriendsService : IFriendsService
 {
-    private readonly IFriendsRepository _friendsRepository;
-    public FriendsService(IFriendsRepository friendsRepository)
+    public Task<bool> AcceptFriendRequestAsync(int userId, int friendId)
     {
-        _friendsRepository = friendsRepository;
+        throw new NotImplementedException();
     }
-    public async Task<IEnumerable<Friends>> GetUserFriendsAsync(int userId)
+
+    public Task<bool> AddFriendAsync(int userId, int friendId)
     {
-        return await _friendsRepository.GetUserFriendsAsync(userId);
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddFriendAsync(int userId, int friendId)
+
+    public Task<IEnumerable<Friends>> GetUserFriendsAsync(int userId)
     {
-        return await _friendsRepository.AddFriendAsync(userId, friendId);
+        throw new NotImplementedException();
     }
-    public async Task<bool> AcceptFriendRequestAsync(int userId, int friendId)
+
+    public Task<bool> RemoveFriendAsync(int userId, int friendId)
     {
-        return await _friendsRepository.AcceptFriendRequestAsync(userId, friendId);
-    }
-    public async Task<bool> RemoveFriendAsync(int userId, int friendId)
-    {
-        return await _friendsRepository.RemoveFriendAsync(userId, friendId);
+        throw new NotImplementedException();
     }
 }

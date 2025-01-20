@@ -1,5 +1,5 @@
 namespace Ipitup.Repositories;
-public interface IBadgeRepository : IGenericRepository<Badge>
+public interface IBadgeRepository
 {
     Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId);
     Task<bool> AddNewBadgeAsync(Badge badge);
@@ -7,37 +7,30 @@ public interface IBadgeRepository : IGenericRepository<Badge>
     Task<List<Badge>> GetAllBadgesAsync();
     Task<List<Badge>> GetLatest8BadgeByUserIdAsync(int userId);
 }
-public class BadgeRepository : GenericRepository<Badge>, IBadgeRepository
+public class BadgeRepository : IBadgeRepository
 {
-    public BadgeRepository(ApplicationContext context) : base(context) { }
-    public async Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId)
+    public Task<bool> AddNewBadgeAsync(Badge badge)
     {
-        return await _context.BadgeUsers
-            .Where(bu => bu.UserId == userId)
-            .Select(bu => bu.Badge!)
-            .ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddNewBadgeAsync(Badge badge)
+
+    public Task<bool> AddUserBadgeAsync(int userId, int badgeId)
     {
-        var result = await AddAsync(badge);
-        return result != null;
+        throw new NotImplementedException();
     }
-    public async Task<bool> AddUserBadgeAsync(int userId, int badgeId)
+
+    public Task<List<Badge>> GetAllBadgesAsync()
     {
-        var result = await _context.BadgeUsers.AddAsync(new BadgeUser { UserId = userId, BadgeId = badgeId });
-        return result != null;
+        throw new NotImplementedException();
     }
-    public async Task<List<Badge>> GetAllBadgesAsync()
+
+    public Task<List<Badge>> GetLatest8BadgeByUserIdAsync(int userId)
     {
-        return await _dbSet.ToListAsync();
+        throw new NotImplementedException();
     }
-    public async Task<List<Badge>> GetLatest8BadgeByUserIdAsync(int userId)
+
+    public Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId)
     {
-        return await _context.BadgeUsers
-            .Where(bu => bu.UserId == userId)
-            .OrderByDescending(bu => bu.BadgeId)
-            .Select(bu => bu.Badge!)
-            .Take(8)
-            .ToListAsync();
+        throw new NotImplementedException();
     }
 }

@@ -3,7 +3,7 @@ public interface IUserService
 {
     Task<bool> CheckConnection();
     Task<bool> CheckEmailAlreadyExists(string email);
-    Task<bool> CheckLoginAuth(string email, string password);
+    Task<User> CheckLoginAuth(string email, string password);
     Task<User> AddUser(User user);
 }
 public class UserService : IUserService
@@ -29,7 +29,7 @@ public class UserService : IUserService
         return await _userRepository.CheckEmailAlreadyExists(email);
     }
 
-    public async Task<bool> CheckLoginAuth(string email, string password)
+    public async Task<User> CheckLoginAuth(string email, string password)
     {
         return await _userRepository.CheckLoginAuth(email, password);
     }

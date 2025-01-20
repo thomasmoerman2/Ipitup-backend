@@ -22,12 +22,13 @@ var host = new HostBuilder()
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ILocationService, LocationService>();
 
-        services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<IBadgeRepository, BadgeRepository>();
+        services.AddScoped<IBadgeService, BadgeService>();
+        
+        services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
         services.AddScoped<IFriendsRepository, FriendsRepository>();
         services.AddScoped<IActivityService, ActivityService>();
-        services.AddScoped<IBadgeService, BadgeService>();
         services.AddScoped<ILeaderboardService, LeaderboardService>();
         services.AddScoped<IFriendsService, FriendsService>();
     })

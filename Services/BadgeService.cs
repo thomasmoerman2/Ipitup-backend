@@ -1,42 +1,50 @@
 namespace Ipitup.Services;
+
 public interface IBadgeService
 {
-    Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId);
     Task<bool> AddBadgeAsync(Badge badge);
-    Task<bool> AddUserBadgeAsync(int userId, int badgeId);
-    Task<List<Badge>> GetAllBadgesAsync();
-    Task<List<Badge>> GetLatest8BadgesAsync(int userId);
-    Task<bool> HasBadgeAsync(int userId, int badgeId);
+    Task<IEnumerable<Badge>> GetAllBadgesAsync();
+    Task<Badge?> GetBadgeByIdAsync(int id);
+    Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId);
+    Task<bool> AddBadgeToUserAsync(int badgeId, int userId);
 }
+
 public class BadgeService : IBadgeService
 {
-    public Task<bool> AddBadgeAsync(Badge badge)
+    private readonly IBadgeRepository _badgeRepository;
+
+    public BadgeService(IBadgeRepository badgeRepository)
     {
-        throw new NotImplementedException();
+        _badgeRepository = badgeRepository;
     }
 
-    public Task<bool> AddUserBadgeAsync(int userId, int badgeId)
+    public async Task<bool> AddBadgeAsync(Badge badge)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(badge.BadgeName))
+        {
+            throw new ArgumentException("Badge name is required");
+        }
+
+        return await _badgeRepository.AddBadgeAsync(badge);
     }
 
-    public Task<List<Badge>> GetAllBadgesAsync()
+    public async Task<IEnumerable<Badge>> GetAllBadgesAsync()
     {
-        throw new NotImplementedException();
+        return await _badgeRepository.GetAllBadgesAsync();
     }
 
-    public Task<List<Badge>> GetLatest8BadgesAsync(int userId)
+    public async Task<Badge?> GetBadgeByIdAsync(int id)
     {
-        throw new NotImplementedException();
+        return await _badgeRepository.GetBadgeByIdAsync(id);
     }
 
-    public Task<IEnumerable<Badge>> GetUserBadgesAsync(int userId)
+    public async Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId)
     {
-        throw new NotImplementedException();
+        return await _badgeRepository.GetBadgesByUserIdAsync(userId);
     }
 
-    public Task<bool> HasBadgeAsync(int userId, int badgeId)
+    public async Task<bool> AddBadgeToUserAsync(int badgeId, int userId)
     {
-        throw new NotImplementedException();
+        return await _badgeRepository.AddBadgeToUserAsync(badgeId, userId);
     }
 }

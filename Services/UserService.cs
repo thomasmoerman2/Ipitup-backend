@@ -1,7 +1,7 @@
 namespace Ipitup_backend.Services;
 public interface IUserService
 {
-    Task<(User? User, string Token)> AuthenticateAsync(string email, string password);
+    Task<User> AuthenticateAsync(string email, string password);
     Task<bool> RegisterAsync(User user);
     Task<User?> GetByEmailAsync(string email);
     Task<User?> GetByIdAsync(int id);
@@ -13,19 +13,16 @@ public interface IUserService
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IJwtService _jwtService;
-    public UserService(IUserRepository userRepository, IJwtService jwtService)
+    public UserService(IUserRepository userRepository)
     {
         _userRepository = userRepository;
-        _jwtService = jwtService;
     }
-    public async Task<(User? User, string Token)> AuthenticateAsync(string email, string password)
+    public async Task<User> AuthenticateAsync(string email, string password)
     {
         var user = await _userRepository.AuthenticateAsync(email, password);
         if (user == null)
-            return (null, string.Empty);
-        var token = _jwtService.GenerateToken(user);
-        return (user, token);
+            return null;
+        return user;
     }
     public async Task<bool> RegisterAsync(User user)
     {

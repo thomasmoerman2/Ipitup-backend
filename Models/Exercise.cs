@@ -1,5 +1,4 @@
 namespace Ipitup_backend.Models;
-
 [Table("Exercise")]
 public class Exercise
 {
@@ -12,7 +11,6 @@ public class Exercise
     public ExerciseType ExerciseType { get; set; }
     public string? ExerciseInstructions { get; set; }
 }
-
 public enum ExerciseType
 {
     Armen,

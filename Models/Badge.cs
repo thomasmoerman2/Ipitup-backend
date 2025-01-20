@@ -1,5 +1,4 @@
 namespace Ipitup_backend.Models;
-
 [Table("Badge")]
 public class Badge
 {

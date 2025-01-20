@@ -1,5 +1,4 @@
 namespace Ipitup_backend.Models;
-
 [Table("Activity")]
 public class Activity
 {
@@ -13,7 +12,6 @@ public class Activity
     public DateTime ActivityDate { get; set; } = DateTime.Now;
     public int? LocationId { get; set; }
     public int? ExerciseId { get; set; }
-
     [ForeignKey("UserId")]
     public User? User { get; set; }
     [ForeignKey("LocationId")]

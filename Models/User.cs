@@ -1,5 +1,4 @@
 namespace Ipitup_backend.Models;
-
 [Table("User")]
 public class User
 {
@@ -17,16 +16,17 @@ public class User
     public string UserLastname { get; set; } = string.Empty;
     [Required]
     [StringLength(100)]
+    [JsonProperty("username")]
     public string UserEmail { get; set; } = string.Empty;
     [Required]
     [StringLength(255)]
+    [JsonProperty("password")]
     public string UserPassword { get; set; } = string.Empty;
     public AccountStatus AccountStatus { get; set; } = AccountStatus.Public;
     public int DailyStreak { get; set; } = 0;
     public DateTime BirthDate { get; set; }
     public int TotalScore { get; set; } = 0;
 }
-
 public enum AccountStatus
 {
     Public,

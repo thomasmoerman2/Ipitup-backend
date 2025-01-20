@@ -1,5 +1,4 @@
 namespace Ipitup_backend.Models;
-
 [Table("Location")]
 public class Location
 {

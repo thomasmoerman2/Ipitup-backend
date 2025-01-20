@@ -5,7 +5,7 @@ public interface IUserRepository : IGenericRepository<User>
     Task<bool> CheckLoginAsync(string email, string password);
     Task<User?> AuthenticateAsync(string email, string password);
     Task<bool> AddNewUserAsync(User user);
-    Task<User?> GetByIdAsync(int id);
+    new Task<User?> GetByIdAsync(int id);
 }
 public class UserRepository : GenericRepository<User>, IUserRepository
 {
@@ -39,7 +39,7 @@ public class UserRepository : GenericRepository<User>, IUserRepository
         var result = await AddAsync(user);
         return result != null;
     }
-    public async Task<User?> GetByIdAsync(int id)
+    public override async Task<User?> GetByIdAsync(int id)
     {
         return await _dbSet.FirstOrDefaultAsync(u => u.UserId == id);
     }

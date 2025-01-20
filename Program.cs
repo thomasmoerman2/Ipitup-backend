@@ -1,1 +1,35 @@
-var AllowSpecificOrigins = "_allowSpecificOrigins";var host = new HostBuilder()    .ConfigureFunctionsWebApplication()    .ConfigureServices(services =>    {        services.AddApplicationInsightsTelemetryWorkerService();        services.ConfigureFunctionsApplicationInsights();        services.AddCors(options =>        {            options.AddPolicy(name: AllowSpecificOrigins,                              builder =>                              {                                  builder.WithOrigins(Environment.GetEnvironmentVariable("AllowedOrigins")).AllowAnyHeader().AllowAnyMethod();                              });        });        services.AddScoped<IJwtService, JwtService>();        services.AddScoped<IUserRepository, UserRepository>();        services.AddScoped<IActivityRepository, ActivityRepository>();        services.AddScoped<IBadgeRepository, BadgeRepository>();        services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();        services.AddScoped<IFriendsRepository, FriendsRepository>();        services.AddDbContext<ApplicationContext>(options =>            options.UseMySql(                Environment.GetEnvironmentVariable("DefaultConnection"),                ServerVersion.AutoDetect(Environment.GetEnvironmentVariable("DefaultConnection"))            ));        services.AddAuthentication()            .AddJwtBearer(options =>            {                options.TokenValidationParameters = new TokenValidationParameters                {                    ValidateIssuerSigningKey = true,                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("Jwt:Key")!)),                    ValidateIssuer = true,                    ValidateAudience = true,                    ValidIssuer = Environment.GetEnvironmentVariable("Jwt:Issuer"),                    ValidAudience = Environment.GetEnvironmentVariable("Jwt:Issuer")                };            });        services.AddTransient<JwtMiddleware>();        services.AddScoped<IUserService, UserService>();        services.AddScoped<IActivityService, ActivityService>();        services.AddScoped<IBadgeService, BadgeService>();        services.AddScoped<ILeaderboardService, LeaderboardService>();        services.AddScoped<IFriendsService, FriendsService>();        // Add security headers middleware        services.AddTransient<SecurityHeadersMiddleware>();    })    .Build();host.Run();
+var AllowSpecificOrigins = "_allowSpecificOrigins";
+var host = new HostBuilder()
+    .ConfigureFunctionsWebApplication()
+    .ConfigureServices(services =>
+    {
+        services.AddApplicationInsightsTelemetryWorkerService();
+        services.ConfigureFunctionsApplicationInsights();
+        services.AddCors(options =>
+        {
+            options.AddPolicy(name: AllowSpecificOrigins,
+                              builder =>
+                              {
+                                  builder.WithOrigins("http://127.0.0.1:7071").AllowAnyHeader().AllowAnyMethod();
+                              });
+        });
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IActivityRepository, ActivityRepository>();
+        services.AddScoped<IBadgeRepository, BadgeRepository>();
+        services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
+        services.AddScoped<IFriendsRepository, FriendsRepository>();
+        services.AddDbContext<ApplicationContext>(options =>
+        {
+            var connectionString = Environment.GetEnvironmentVariable("DefaultConnection");
+            var serverVersion = ServerVersion.AutoDetect(connectionString);
+            options.UseMySql(connectionString, serverVersion);
+        });
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IActivityService, ActivityService>();
+        services.AddScoped<IBadgeService, BadgeService>();
+        services.AddScoped<ILeaderboardService, LeaderboardService>();
+        services.AddScoped<IFriendsService, FriendsService>();
+    })
+    .Build();
+host.Run();
+

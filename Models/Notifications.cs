@@ -1,5 +1,4 @@
 namespace Ipitup_backend.Models;
-
 [Table("Notifications")]
 public class Notifications
 {
@@ -11,11 +10,9 @@ public class Notifications
     public string Message { get; set; } = string.Empty;
     public bool IsRead { get; set; } = false;
     public NotificationType Type { get; set; }
-
     [ForeignKey("UserId")]
     public User? User { get; set; }
 }
-
 public enum NotificationType
 {
     Alert,

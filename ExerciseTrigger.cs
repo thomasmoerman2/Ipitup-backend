@@ -45,7 +45,7 @@ public class ExerciseTrigger
 
     [Function("GetExerciseById")]
     public async Task<IActionResult> GetExerciseById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercise/get/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercise/{id}")] HttpRequest req, string id)
 
     {
         if (!int.TryParse(id, out int exerciseId))

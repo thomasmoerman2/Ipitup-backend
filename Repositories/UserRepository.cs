@@ -35,7 +35,7 @@ public class UserRepository : IUserRepository
             using (var connection = new MySqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var command = new MySqlCommand($"SELECT COUNT(*) FROM users WHERE email = @email", connection);
+                var command = new MySqlCommand("SELECT COUNT(*) FROM User WHERE userEmail = @email", connection);
                 command.Parameters.AddWithValue("@email", email);
                 var result = await command.ExecuteScalarAsync();
                 return result != null && (int)result > 0;
@@ -48,40 +48,45 @@ public class UserRepository : IUserRepository
     }
     public async Task<bool> CheckLoginAuth(string email, string password)
     {
-        try
+
+        using (var connection = new MySqlConnection(_connectionString))
         {
-            using (var connection = new MySqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                var command = new MySqlCommand($"SELECT COUNT(*) FROM users WHERE email = @email AND password = @password", connection);
-                command.Parameters.AddWithValue("@email", email);
-                command.Parameters.AddWithValue("@password", password);
-                var result = await command.ExecuteScalarAsync();
-                return result != null && (int)result > 0;
-            }
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Failed to authenticate login", ex);
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT COUNT(*) FROM User WHERE userEmail = @email AND userPassword = @password", connection);
+            command.Parameters.AddWithValue("@email", email);
+            command.Parameters.AddWithValue("@password", password);
+            var result = await command.ExecuteScalarAsync();
+            int resultInt = Convert.ToInt32(result);
+            return resultInt > 0;
         }
     }
     public async Task<User> AddUser(User user)
     {
-        try
+        if (!await CheckConnection())
         {
-            using (var connection = new MySqlConnection(_connectionString))
+            throw new Exception("Failed to connect to database");
+        }
+
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, avatar, birthDate) VALUES (@email, @password, @firstname, @lastname, @avatar, @birthdate)", connection);
+            command.Parameters.AddWithValue("@email", user.UserEmail);
+            command.Parameters.AddWithValue("@password", user.UserPassword);
+            command.Parameters.AddWithValue("@firstname", user.UserFirstname);
+            command.Parameters.AddWithValue("@lastname", user.UserLastname);
+            command.Parameters.AddWithValue("@avatar", user.Avatar);
+            command.Parameters.AddWithValue("@birthdate", user.BirthDate);
+            var result = await command.ExecuteNonQueryAsync();
+            if (result > 0)
             {
-                await connection.OpenAsync();
-                var command = new MySqlCommand($"INSERT INTO users (email, password) VALUES (@email, @password) RETURNING *", connection);
-                command.Parameters.AddWithValue("@email", user.UserEmail);
-                command.Parameters.AddWithValue("@password", user.UserPassword);
-                var result = await command.ExecuteScalarAsync();
-                return result != null ? (User)result : null;
+                return user;
+            }
+            else
+            {
+                throw new Exception("Failed to add user");
             }
         }
-        catch (Exception ex)
-        {
-            throw new Exception("Failed to add user", ex);
-        }
+
     }
 }

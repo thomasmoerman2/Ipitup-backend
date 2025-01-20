@@ -59,7 +59,7 @@ namespace Ipitup.Functions
                 {
                     return new BadRequestObjectResult(new { message = "Invalid JSON format" });
                 }
-                if (userRequest.UserEmail == "" || userRequest.UserPassword == "" || userRequest.UserFirstname == "" || userRequest.UserLastname == "")
+                if (userRequest.UserEmail == "" || userRequest.UserPassword == "" || userRequest.UserFirstname == "" || userRequest.UserLastname == "" || userRequest.Avatar == "" || userRequest.BirthDate == DateTime.MinValue)
                 {
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
                 }

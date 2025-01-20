@@ -7,6 +7,7 @@ public class User
     public int UserId { get; set; }
     [Required]
     [StringLength(255)]
+    [JsonProperty("avatar")]
     public string Avatar { get; set; } = string.Empty;
     [Required]
     [StringLength(50)]
@@ -26,6 +27,7 @@ public class User
     public string UserPassword { get; set; } = string.Empty;
     public AccountStatus AccountStatus { get; set; } = AccountStatus.Public;
     public int DailyStreak { get; set; } = 0;
+    [JsonProperty("birthdate")]
     public DateTime BirthDate { get; set; }
     public int TotalScore { get; set; } = 0;
 }

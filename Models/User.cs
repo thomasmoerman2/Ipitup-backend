@@ -10,13 +10,15 @@ public class User
     public string Avatar { get; set; } = string.Empty;
     [Required]
     [StringLength(50)]
+    [JsonProperty("firstname")]
     public string UserFirstname { get; set; } = string.Empty;
     [Required]
     [StringLength(50)]
+    [JsonProperty("lastname")]
     public string UserLastname { get; set; } = string.Empty;
     [Required]
     [StringLength(100)]
-    [JsonProperty("username")]
+    [JsonProperty("email")]
     public string UserEmail { get; set; } = string.Empty;
     [Required]
     [StringLength(255)]

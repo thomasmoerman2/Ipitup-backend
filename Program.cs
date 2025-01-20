@@ -10,7 +10,7 @@ var host = new HostBuilder()
             options.AddPolicy(name: AllowSpecificOrigins,
                               builder =>
                               {
-                                  builder.WithOrigins("http://127.0.0.1:7071").AllowAnyHeader().AllowAnyMethod();
+                                  builder.WithOrigins(Environment.GetEnvironmentVariable("AllowedOrigins")).AllowAnyHeader().AllowAnyMethod();
                               });
         });
         services.AddScoped<IUserRepository, UserRepository>();
@@ -18,12 +18,7 @@ var host = new HostBuilder()
         services.AddScoped<IBadgeRepository, BadgeRepository>();
         services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
         services.AddScoped<IFriendsRepository, FriendsRepository>();
-        services.AddDbContext<ApplicationContext>(options =>
-        {
-            var connectionString = Environment.GetEnvironmentVariable("DefaultConnection");
-            var serverVersion = ServerVersion.AutoDetect(connectionString);
-            options.UseMySql(connectionString, serverVersion);
-        });
+
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IBadgeService, BadgeService>();

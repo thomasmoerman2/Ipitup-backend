@@ -1,7 +1,7 @@
 namespace Ipitup.Services;
 public interface IUserService
 {
-    Task<bool> RegisterAsync(User user);
+    Task<bool> AddNewUserAsync(User user);
     Task<User?> GetByIdAsync(int id);
     Task<IEnumerable<User>> GetAllAsync();
     Task<bool> UpdateUserAsync(User user);
@@ -16,7 +16,7 @@ public class UserService : IUserService
     {
         _userRepository = userRepository;
     }
-    public async Task<bool> RegisterAsync(User user)
+    public async Task<bool> AddNewUserAsync(User user)
     {
         if (await EmailExistsAsync(user.UserEmail))
             return false;

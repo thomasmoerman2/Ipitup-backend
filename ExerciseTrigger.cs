@@ -62,4 +62,19 @@ public class ExerciseTrigger
         return new OkObjectResult(exercise);
     }
 
+    [Function("GetRandomExercise")]
+    public async Task<IActionResult> GetRandomExercise(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercise/random")] HttpRequest req)
+
+    {
+        var exercise = await _exerciseService.GetRandomExerciseAsync();
+
+        if (exercise == null)
+        {
+            return new NotFoundObjectResult(new { message = "Exercise not found" });
+        }
+
+        return new OkObjectResult(exercise);
+    }
+
 }

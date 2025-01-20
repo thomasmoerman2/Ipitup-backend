@@ -6,7 +6,7 @@ public interface IActivityRepository
     Task<IEnumerable<Activity>> GetAllActivitiesAsync();
     Task<Activity?> GetActivityByIdAsync(int id);
     Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
-
+    Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
 }
 
 public class ActivityRepository : IActivityRepository
@@ -101,6 +101,30 @@ public class ActivityRepository : IActivityRepository
         var command = new MySqlCommand("SELECT * FROM Activity WHERE locationId = @locationId", connection);
         command.Parameters.AddWithValue("@locationId", locationId);
 
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            activities.Add(new Activity
+            {
+                ActivityId = reader.GetInt32(reader.GetOrdinal("activityId")),
+                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                ActivityScore = reader.GetInt32(reader.GetOrdinal("activityScore")),
+                ActivityDuration = reader.GetInt32(reader.GetOrdinal("activityDuration")),
+                ActivityDate = reader.GetDateTime(reader.GetOrdinal("activityDate")),
+                LocationId = reader.IsDBNull(reader.GetOrdinal("locationId")) ? null : reader.GetInt32(reader.GetOrdinal("locationId")),
+                ExerciseId = reader.IsDBNull(reader.GetOrdinal("exerciseId")) ? null : reader.GetInt32(reader.GetOrdinal("exerciseId"))
+            });
+        }
+        return activities;
+    }
+
+    public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId)
+    {
+        var activities = new List<Activity>();
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var command = new MySqlCommand("SELECT * FROM Activity WHERE userId = @userId ORDER BY activityDate DESC LIMIT 5", connection);
+        command.Parameters.AddWithValue("@userId", userId);
         using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {

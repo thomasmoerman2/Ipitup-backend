@@ -77,5 +77,22 @@ public class ActivityTrigger
 
         return new OkObjectResult(activities);
     }
+    [Function("GetLatestActivityUserById")]
+    public async Task<IActionResult> GetLatestActivityUserById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/{userId}")] HttpRequest req, string userId)
+    {
+        if (!int.TryParse(userId, out int userid))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var activity = await _activityService.GetLatestActivityUserByIdAsync(userid);
+        if (activity == null)
+        {
+            return new NotFoundObjectResult(new { message = "Activity not found" });
+        }
+
+        return new OkObjectResult(activity);
+    }
 
 }

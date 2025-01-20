@@ -6,7 +6,7 @@ public interface IActivityService
     Task<IEnumerable<Activity>> GetAllActivitiesAsync();
     Task<Activity?> GetActivityByIdAsync(int id);
     Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
-
+    Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
 }
 
 public class ActivityService : IActivityService
@@ -46,4 +46,8 @@ public class ActivityService : IActivityService
     return await _activityRepository.GetActivitiesByLocationIdAsync(locationId);
 }
 
+    public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId)
+    {
+        return await _activityRepository.GetLatestActivityUserByIdAsync(userId);
+    }
 }

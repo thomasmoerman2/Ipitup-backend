@@ -13,15 +13,12 @@ public class ApplicationContext : DbContext
     public DbSet<Leaderboard> Leaderboards { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<User> Users { get; set; }
-    public DbSet<ActivityUser> ActivityUsers { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<BadgeUser>()
             .HasKey(bu => new { bu.BadgeId, bu.UserId });
         modelBuilder.Entity<Friends>()
             .HasKey(f => new { f.UserId, f.FriendId });
-        modelBuilder.Entity<ActivityUser>()
-            .HasKey(au => new { au.ActivityId, au.UserId });
         modelBuilder.Entity<User>()
             .HasIndex(u => u.UserEmail)
             .IsUnique();

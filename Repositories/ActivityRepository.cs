@@ -1,36 +1,121 @@
 namespace Ipitup.Repositories;
+
 public interface IActivityRepository
 {
-    Task<IEnumerable<Activity>> GetByUserIdAsync(int userId);
-    Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId);
-    Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId);
-    Task<bool> AddNewActivityAsync(Activity activity);
-    Task<bool> AddUserActivityAsync(int userId, int activityId);
+    Task<bool> AddActivityAsync(Activity activity);
+    Task<IEnumerable<Activity>> GetAllActivitiesAsync();
+    Task<Activity?> GetActivityByIdAsync(int id);
+    Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
+
 }
+
 public class ActivityRepository : IActivityRepository
 {
-    public Task<bool> AddNewActivityAsync(Activity activity)
+    private readonly string _connectionString;
+
+    public ActivityRepository()
     {
-        throw new NotImplementedException();
+        _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString")
+                            ?? throw new InvalidOperationException("Database connection string is not set.");
     }
 
-    public Task<bool> AddUserActivityAsync(int userId, int activityId)
+    public async Task<bool> AddActivityAsync(Activity activity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            var command = new MySqlCommand(@"
+                INSERT INTO Activity (userId, activityScore, activityDuration, activityDate, locationId, exerciseId) 
+                VALUES (@userId, @score, @duration, @date, @location, @exercise)", connection);
+
+            command.Parameters.AddWithValue("@userId", activity.UserId);
+            command.Parameters.AddWithValue("@score", activity.ActivityScore);
+            command.Parameters.AddWithValue("@duration", activity.ActivityDuration);
+            command.Parameters.AddWithValue("@date", activity.ActivityDate);
+            command.Parameters.AddWithValue("@location", activity.LocationId ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue("@exercise", activity.ExerciseId ?? (object)DBNull.Value);
+
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error adding activity", ex);
+        }
     }
 
-    public Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId)
+    public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {
-        throw new NotImplementedException();
+        var activities = new List<Activity>();
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var command = new MySqlCommand("SELECT * FROM Activity", connection);
+
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            activities.Add(new Activity
+            {
+                ActivityId = reader.GetInt32(reader.GetOrdinal("activityId")),
+                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                ActivityScore = reader.GetInt32(reader.GetOrdinal("activityScore")),
+                ActivityDuration = reader.GetInt32(reader.GetOrdinal("activityDuration")),
+                ActivityDate = reader.GetDateTime(reader.GetOrdinal("activityDate")),
+                LocationId = reader.IsDBNull(reader.GetOrdinal("locationId")) ? null : reader.GetInt32(reader.GetOrdinal("locationId")),
+                ExerciseId = reader.IsDBNull(reader.GetOrdinal("exerciseId")) ? null : reader.GetInt32(reader.GetOrdinal("exerciseId"))
+            });
+        }
+        return activities;
     }
 
-    public Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId)
+    public async Task<Activity?> GetActivityByIdAsync(int id)
     {
-        throw new NotImplementedException();
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var command = new MySqlCommand("SELECT * FROM Activity WHERE activityId = @id", connection);
+        command.Parameters.AddWithValue("@id", id);
+
+        using var reader = await command.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+        {
+            return new Activity
+            {
+                ActivityId = reader.GetInt32(reader.GetOrdinal("activityId")),
+                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                ActivityScore = reader.GetInt32(reader.GetOrdinal("activityScore")),
+                ActivityDuration = reader.GetInt32(reader.GetOrdinal("activityDuration")),
+                ActivityDate = reader.GetDateTime(reader.GetOrdinal("activityDate")),
+                LocationId = reader.IsDBNull(reader.GetOrdinal("locationId")) ? null : reader.GetInt32(reader.GetOrdinal("locationId")),
+                ExerciseId = reader.IsDBNull(reader.GetOrdinal("exerciseId")) ? null : reader.GetInt32(reader.GetOrdinal("exerciseId"))
+            };
+        }
+        return null;
     }
 
-    public Task<IEnumerable<Activity>> GetByUserIdAsync(int userId)
+    public async Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId)
     {
-        throw new NotImplementedException();
+        var activities = new List<Activity>();
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var command = new MySqlCommand("SELECT * FROM Activity WHERE locationId = @locationId", connection);
+        command.Parameters.AddWithValue("@locationId", locationId);
+
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            activities.Add(new Activity
+            {
+                ActivityId = reader.GetInt32(reader.GetOrdinal("activityId")),
+                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                ActivityScore = reader.GetInt32(reader.GetOrdinal("activityScore")),
+                ActivityDuration = reader.GetInt32(reader.GetOrdinal("activityDuration")),
+                ActivityDate = reader.GetDateTime(reader.GetOrdinal("activityDate")),
+                LocationId = reader.IsDBNull(reader.GetOrdinal("locationId")) ? null : reader.GetInt32(reader.GetOrdinal("locationId")),
+                ExerciseId = reader.IsDBNull(reader.GetOrdinal("exerciseId")) ? null : reader.GetInt32(reader.GetOrdinal("exerciseId"))
+            });
+        }
+        return activities;
     }
+
 }

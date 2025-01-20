@@ -1,54 +1,49 @@
 namespace Ipitup.Services;
+
 public interface IActivityService
 {
-    Task<IEnumerable<Activity>> GetByUserIdAsync(int userId);
-    Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId);
-    Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId);
     Task<bool> AddActivityAsync(Activity activity);
-    Task<bool> AddUserActivityAsync(int userId, int activityId);
-    Task<bool> DeleteActivityAsync(int activityId);
-    Task<Activity?> GetActivityByIdAsync(int activityId);
-    Task<int> GetUserTotalScoreAsync(int userId);
+    Task<IEnumerable<Activity>> GetAllActivitiesAsync();
+    Task<Activity?> GetActivityByIdAsync(int id);
+    Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
+
 }
+
 public class ActivityService : IActivityService
 {
-    public Task<bool> AddActivityAsync(Activity activity)
+    private readonly IActivityRepository _activityRepository;
+
+    public ActivityService(IActivityRepository activityRepository)
     {
-        throw new NotImplementedException();
+        _activityRepository = activityRepository;
     }
 
-    public Task<bool> AddUserActivityAsync(int userId, int activityId)
+    public async Task<bool> AddActivityAsync(Activity activity)
     {
-        throw new NotImplementedException();
+        if (activity.UserId <= 0 || activity.ActivityScore < 0 || activity.ActivityDuration <= 0)
+        {
+            throw new ArgumentException("Invalid activity data");
+        }
+        return await _activityRepository.AddActivityAsync(activity);
     }
 
-    public Task<bool> DeleteActivityAsync(int activityId)
+    public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {
-        throw new NotImplementedException();
+        return await _activityRepository.GetAllActivitiesAsync();
     }
 
-    public Task<Activity?> GetActivityByIdAsync(int activityId)
+    public async Task<Activity?> GetActivityByIdAsync(int id)
     {
-        throw new NotImplementedException();
+        return await _activityRepository.GetActivityByIdAsync(id);
     }
 
-    public Task<IEnumerable<Activity>> GetByLocationIdAsync(int locationId)
+    public async Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId)
+{
+    if (locationId <= 0)
     {
-        throw new NotImplementedException();
+        throw new ArgumentException("Invalid location ID");
     }
+    return await _activityRepository.GetActivitiesByLocationIdAsync(locationId);
+}
 
-    public Task<IEnumerable<Activity>> GetByUserIdAndLocationIdAsync(int userId, int locationId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<Activity>> GetByUserIdAsync(int userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> GetUserTotalScoreAsync(int userId)
-    {
-        throw new NotImplementedException();
-    }
 }

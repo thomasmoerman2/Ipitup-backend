@@ -19,7 +19,8 @@ var host = new HostBuilder()
         services.AddScoped<IExerciseRepository, ExerciseRepository>();
         services.AddScoped<IExerciseService, ExerciseService>();
 
-
+        services.AddScoped<ILocationRepository, LocationRepository>();
+        services.AddScoped<ILocationService, LocationService>();
 
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<IBadgeRepository, BadgeRepository>();

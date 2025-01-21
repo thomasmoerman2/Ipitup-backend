@@ -14,11 +14,13 @@ public class LeaderboardService : ILeaderboardService
 {
     private readonly ILeaderboardRepository _leaderboardRepository;
     private readonly IActivityRepository _activityRepository;
+    private readonly IUserRepository _userRepository;
 
-    public LeaderboardService(ILeaderboardRepository leaderboardRepository, IActivityRepository activityRepository)
+    public LeaderboardService(ILeaderboardRepository leaderboardRepository, IActivityRepository activityRepository, IUserRepository userRepository)
     {
         _leaderboardRepository = leaderboardRepository;
-        _activityRepository = activityRepository; 
+        _activityRepository = activityRepository;
+        _userRepository = userRepository;
     }
 
     public async Task<bool> AddLeaderboardEntryAsync(Leaderboard leaderboard)

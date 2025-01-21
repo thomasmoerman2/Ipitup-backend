@@ -15,6 +15,7 @@ public interface IUserRepository
     Task<AuthToken?> GetAuthTokenAsync(string token);
     Task<bool> InvalidateAuthTokenAsync(string token);
     Task<bool> VerifyAuthTokenAsync(string token);
+    Task<bool> UpdateUserTotalScoreAsync(int userId, int score);
 }
 
 public class UserRepository : IUserRepository
@@ -316,4 +317,21 @@ public class UserRepository : IUserRepository
         }
         return Convert.ToBase64String(randomBytes);
     }
+
+    public async Task<bool> UpdateUserTotalScoreAsync(int userId, int score)
+    {
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var command = new MySqlCommand(@"
+            UPDATE User 
+            SET totalScore = totalScore + @score 
+            WHERE userId = @userId;", connection);
+
+        command.Parameters.AddWithValue("@score", score);
+        command.Parameters.AddWithValue("@userId", userId);
+
+        return await command.ExecuteNonQueryAsync() > 0;
+    }
+
 }

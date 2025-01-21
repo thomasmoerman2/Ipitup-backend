@@ -14,10 +14,14 @@ public interface IActivityService
 public class ActivityService : IActivityService
 {
     private readonly IActivityRepository _activityRepository;
+    private readonly IUserService _userService;
+    private readonly ILeaderboardService _leaderboardService;
 
-    public ActivityService(IActivityRepository activityRepository)
+    public ActivityService(IActivityRepository activityRepository, IUserService userService, ILeaderboardService leaderboardService)
     {
         _activityRepository = activityRepository;
+        _userService = userService;
+        _leaderboardService = leaderboardService;
     }
 
     public async Task<bool> AddActivityAsync(Activity activity)
@@ -26,7 +30,29 @@ public class ActivityService : IActivityService
         {
             throw new ArgumentException("Invalid activity data");
         }
-        return await _activityRepository.AddActivityAsync(activity);
+
+        var result = await _activityRepository.AddActivityAsync(activity);
+        if (result)
+        {
+            // Update de totale gebruikersscore via UserService
+            var updateUserSuccess = await _userService.UpdateUserTotalScoreAsync(activity.UserId, activity.ActivityScore);
+            if (!updateUserSuccess)
+            {
+                throw new Exception($"Failed to update total score for user {activity.UserId}");
+            }
+
+            // Update de locatie-leaderboard via LeaderboardService
+            if (activity.LocationId.HasValue)
+            {
+                var updateLeaderboardSuccess = await _leaderboardService.UpdateLeaderboardScoreAsync(activity.UserId, activity.LocationId.Value, activity.ActivityScore);
+                if (!updateLeaderboardSuccess)
+                {
+                    throw new Exception($"Failed to update leaderboard score for location {activity.LocationId}");
+                }
+            }
+        }
+
+        return result;
     }
 
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()

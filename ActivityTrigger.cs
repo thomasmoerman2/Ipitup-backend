@@ -1,38 +1,77 @@
-namespace Ipitup.Functions;
-
 public class ActivityTrigger
 {
     private readonly ILogger<ActivityTrigger> _logger;
     private readonly IActivityService _activityService;
+    private readonly ILeaderboardService _leaderboardService;
 
-    public ActivityTrigger(ILogger<ActivityTrigger> logger, IActivityService activityService)
+    public ActivityTrigger(
+        ILogger<ActivityTrigger> logger, 
+        IActivityService activityService,
+        ILeaderboardService leaderboardService)
     {
         _logger = logger;
         _activityService = activityService;
+        _leaderboardService = leaderboardService;
     }
 
     [Function("PostActivity")]
-    public async Task<IActionResult> PostActivity(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activity/add")] HttpRequest req)
+public async Task<IActionResult> PostActivity(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activity/add")] HttpRequest req)
     {
         _logger.LogInformation("PostActivity function triggered");
 
-        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        var activityRequest = JsonConvert.DeserializeObject<Activity>(requestBody);
-
-        if (activityRequest == null)
+        try
         {
-            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
-        }
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var activityRequest = JsonConvert.DeserializeObject<Activity>(requestBody);
 
-        var result = await _activityService.AddActivityAsync(activityRequest);
-        if (!result)
+            if (activityRequest == null)
+            {
+                _logger.LogWarning("Invalid JSON format received for activity");
+                return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+            }
+
+            _logger.LogInformation($"Received activity from user {activityRequest.UserId} at location {activityRequest.LocationId}");
+
+            var result = await _activityService.AddActivityAsync(activityRequest);
+            if (!result)
+            {
+                _logger.LogError($"Failed to add activity for user {activityRequest.UserId}");
+                return new BadRequestObjectResult(new { message = "Failed to add activity" });
+            }
+
+            // Leaderboard update logic
+            if (activityRequest.LocationId.HasValue)
+            {
+                _logger.LogInformation($"Updating leaderboard for user {activityRequest.UserId} at location {activityRequest.LocationId}");
+                var leaderboardUpdated = await _leaderboardService.UpdateLeaderboardScoreAsync(
+                    activityRequest.UserId, 
+                    activityRequest.LocationId.Value, 
+                    activityRequest.ActivityScore
+                );
+
+                if (!leaderboardUpdated)
+                {
+                    _logger.LogError($"Failed to update leaderboard for user {activityRequest.UserId} at location {activityRequest.LocationId}");
+                    return new BadRequestObjectResult(new { message = "Activity added, but leaderboard update failed" });
+                }
+
+                _logger.LogInformation($"Successfully updated leaderboard for user {activityRequest.UserId} at location {activityRequest.LocationId}");
+            }
+            else
+            {
+                _logger.LogInformation($"No location provided, skipping leaderboard update for user {activityRequest.UserId}");
+            }
+
+            return new OkObjectResult(new { message = "Activity added successfully and leaderboard updated" });
+        }
+        catch (Exception ex)
         {
-            return new BadRequestObjectResult(new { message = "Failed to add activity" });
+            _logger.LogError($"Error in PostActivity: {ex.Message}");
+            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }
-
-        return new OkObjectResult(new { message = "Activity added successfully" });
     }
+
 
     [Function("UpdateActivityById")]
     public async Task<IActionResult> UpdateActivityById(

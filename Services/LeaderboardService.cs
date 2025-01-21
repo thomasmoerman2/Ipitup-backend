@@ -1,36 +1,63 @@
 namespace Ipitup.Services;
+
 public interface ILeaderboardService
 {
-    Task<IEnumerable<Leaderboard>> GetByLocationIdAsync(int locationId);
-    Task<List<Leaderboard>> GetTop10ByLocationIdAsync(int locationId);
-    Task<List<Leaderboard>> GetTop10Async();
-    Task<bool> UpdateScoreAsync(int userId, int locationId, int newScore);
-    Task<int> GetUserRankAsync(int userId, int? locationId = null);
+    Task<bool> AddLeaderboardEntryAsync(Leaderboard leaderboard);
+    Task<Leaderboard?> GetLeaderboardByIdAsync(int leaderboardId);
+    Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId);
+    Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
+    Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore); // Add this line
 }
+
+
 public class LeaderboardService : ILeaderboardService
 {
-    public Task<IEnumerable<Leaderboard>> GetByLocationIdAsync(int locationId)
+    private readonly ILeaderboardRepository _leaderboardRepository;
+    private readonly IActivityRepository _activityRepository;
+
+    public LeaderboardService(ILeaderboardRepository leaderboardRepository, IActivityRepository activityRepository)
     {
-        throw new NotImplementedException();
+        _leaderboardRepository = leaderboardRepository;
+        _activityRepository = activityRepository; 
     }
 
-    public Task<List<Leaderboard>> GetTop10Async()
+    public async Task<bool> AddLeaderboardEntryAsync(Leaderboard leaderboard)
     {
-        throw new NotImplementedException();
+        if (leaderboard.UserId <= 0 || leaderboard.Score < 0)
+        {
+            throw new ArgumentException("Invalid leaderboard data");
+        }
+        return await _leaderboardRepository.AddLeaderboardEntryAsync(leaderboard);
     }
 
-    public Task<List<Leaderboard>> GetTop10ByLocationIdAsync(int locationId)
+    public async Task<Leaderboard?> GetLeaderboardByIdAsync(int leaderboardId)
     {
-        throw new NotImplementedException();
+        return await _leaderboardRepository.GetLeaderboardByIdAsync(leaderboardId);
     }
 
-    public Task<int> GetUserRankAsync(int userId, int? locationId = null)
+    public async Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId)
     {
-        throw new NotImplementedException();
+        return await _leaderboardRepository.GetLeaderboardByLocationIdAsync(locationId);
     }
 
-    public Task<bool> UpdateScoreAsync(int userId, int locationId, int newScore)
+    public async Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync()
     {
-        throw new NotImplementedException();
+        return await _leaderboardRepository.GetAllLeaderboardEntriesAsync();
     }
+
+    public async Task<bool> AddActivityAsync(Activity activity)
+    {
+        var result = await _activityRepository.AddActivityAsync(activity);
+        if (result)
+        {
+            await UpdateLeaderboardScoreAsync(activity.UserId, activity.LocationId ?? 0, activity.ActivityScore);
+        }
+        return result;
+    }
+
+    public async Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore)
+    {
+        return await _leaderboardRepository.UpdateLeaderboardScoreAsync(userId, locationId, activityScore);
+    }
+
 }

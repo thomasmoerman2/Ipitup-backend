@@ -6,6 +6,8 @@ public interface IExerciseRepository
     Task<IEnumerable<Exercise>> GetAllExercisesAsync();
     Task<Exercise?> GetExerciseByIdAsync(int id);
     Task<List<Exercise>> GetRandomExerciseAsync();
+    Task<bool> DeleteExerciseAsync(int id);
+    Task<bool> UpdateExerciseByIdAsync(int id, Exercise exercise);
 }
 
 public class ExerciseRepository : IExerciseRepository
@@ -146,5 +148,31 @@ public class ExerciseRepository : IExerciseRepository
         }
 
         return exercises;
+    }
+
+    public async Task<bool> DeleteExerciseAsync(int id)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("DELETE FROM Exercise WHERE exerciseId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
+    public async Task<bool> UpdateExerciseByIdAsync(int id, Exercise exercise)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE Exercise SET exerciseName = @name, exerciseType = @type, exerciseInstructions = @instructions, exerciseTime = @time WHERE exerciseId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@name", exercise.ExerciseName);
+            command.Parameters.AddWithValue("@type", exercise.ExerciseType);
+            command.Parameters.AddWithValue("@instructions", exercise.ExerciseInstructions ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue("@time", exercise.ExerciseTime);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
     }
 }

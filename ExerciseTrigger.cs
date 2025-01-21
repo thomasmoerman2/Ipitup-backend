@@ -34,6 +34,49 @@ public class ExerciseTrigger
         return new OkObjectResult(new { message = "Exercise added successfully" });
     }
 
+    [Function("UpdateExerciseById")]
+    public async Task<IActionResult> UpdateExerciseById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "exercise/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int exerciseId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var exerciseRequest = JsonConvert.DeserializeObject<Exercise>(requestBody);
+
+        if (exerciseRequest == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+        }
+
+        var result = await _exerciseService.UpdateExerciseByIdAsync(exerciseId, exerciseRequest);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to update exercise" });
+        }
+
+        return new OkObjectResult(new { message = "Exercise updated successfully" });
+    }
+
+    [Function("RemoveExerciseById")]
+    public async Task<IActionResult> RemoveExerciseById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "exercise/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int exerciseId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var result = await _exerciseService.DeleteExerciseAsync(exerciseId);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to remove exercise" });
+        }
+
+        return new OkObjectResult(new { message = "Exercise removed successfully" });
+    }
 
     [Function("GetAllExercises")]
     public async Task<IActionResult> GetAllExercises(

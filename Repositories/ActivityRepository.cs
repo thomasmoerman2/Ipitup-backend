@@ -7,6 +7,8 @@ public interface IActivityRepository
     Task<Activity?> GetActivityByIdAsync(int id);
     Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
     Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
+    Task<bool> DeleteActivityAsync(int id);
+    Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
 }
 
 public class ActivityRepository : IActivityRepository
@@ -142,4 +144,31 @@ public class ActivityRepository : IActivityRepository
         return activities;
     }
 
+
+    public async Task<bool> DeleteActivityAsync(int id)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("DELETE FROM Activity WHERE activityId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
+    public async Task<bool> UpdateActivityByIdAsync(int id, Activity activity)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE Activity SET activityScore = @score, activityDuration = @duration, activityDate = @date, locationId = @locationId, exerciseId = @exerciseId WHERE activityId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@score", activity.ActivityScore);
+            command.Parameters.AddWithValue("@duration", activity.ActivityDuration);
+            command.Parameters.AddWithValue("@date", activity.ActivityDate);
+            command.Parameters.AddWithValue("@locationId", activity.LocationId ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue("@exerciseId", activity.ExerciseId ?? (object)DBNull.Value);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
 }

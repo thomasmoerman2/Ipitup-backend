@@ -8,6 +8,9 @@ public interface IUserService
     Task<User?> GetUserByIdAsync(int userId);
     Task<IEnumerable<User>> GetAllUsersAsync();
     Task<User?> GetUserByFullNameAsync(string firstname, string lastname);
+    Task<AuthToken?> CreateAuthTokenAsync(int userId);
+    Task<bool> VerifyAuthTokenAsync(string token);
+    Task<bool> InvalidateAuthTokenAsync(string token);
 }
 public class UserService : IUserService
 {
@@ -52,4 +55,18 @@ public class UserService : IUserService
         return await _userRepository.GetUserByFullNameAsync(firstname, lastname);
     }
 
+    public async Task<AuthToken?> CreateAuthTokenAsync(int userId)
+    {
+        return await _userRepository.CreateAuthTokenAsync(userId);
+    }
+
+    public async Task<bool> VerifyAuthTokenAsync(string token)
+    {
+        return await _userRepository.VerifyAuthTokenAsync(token);
+    }
+
+    public async Task<bool> InvalidateAuthTokenAsync(string token)
+    {
+        return await _userRepository.InvalidateAuthTokenAsync(token);
+    }
 }

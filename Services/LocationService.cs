@@ -5,6 +5,8 @@ public interface ILocationService
     Task<bool> AddLocationAsync(Location location);
     Task<IEnumerable<Location>> GetAllLocationsAsync();
     Task<Location?> GetLocationByIdAsync(int id);
+    Task<bool> DeleteLocationAsync(int id);
+    Task<bool> UpdateLocationByIdAsync(int id, Location location);
 }
 
 public class LocationService : ILocationService
@@ -34,5 +36,15 @@ public class LocationService : ILocationService
     public async Task<Location?> GetLocationByIdAsync(int id)
     {
         return await _locationRepository.GetLocationByIdAsync(id);
+    }
+
+    public async Task<bool> DeleteLocationAsync(int id)
+    {
+        return await _locationRepository.DeleteLocationAsync(id);
+    }
+
+    public async Task<bool> UpdateLocationByIdAsync(int id, Location location)
+    {
+        return await _locationRepository.UpdateLocationByIdAsync(id, location);
     }
 }

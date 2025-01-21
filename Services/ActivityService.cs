@@ -3,10 +3,12 @@ namespace Ipitup.Services;
 public interface IActivityService
 {
     Task<bool> AddActivityAsync(Activity activity);
+    Task<bool> DeleteActivityAsync(int id);
     Task<IEnumerable<Activity>> GetAllActivitiesAsync();
     Task<Activity?> GetActivityByIdAsync(int id);
     Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
     Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
+    Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
 }
 
 public class ActivityService : IActivityService
@@ -49,5 +51,15 @@ public class ActivityService : IActivityService
     public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId)
     {
         return await _activityRepository.GetLatestActivityUserByIdAsync(userId);
+    }
+
+    public async Task<bool> DeleteActivityAsync(int id)
+    {
+        return await _activityRepository.DeleteActivityAsync(id);
+    }
+
+    public async Task<bool> UpdateActivityByIdAsync(int id, Activity activity)
+    {
+        return await _activityRepository.UpdateActivityByIdAsync(id, activity);
     }
 }

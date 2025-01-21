@@ -34,6 +34,50 @@ public class BadgeTrigger
         return new OkObjectResult(new { message = "Badge added successfully" });
     }
 
+    [Function("UpdateBadgeById")]
+    public async Task<IActionResult> UpdateBadgeById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "badge/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int badgeId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var badgeRequest = JsonConvert.DeserializeObject<Badge>(requestBody);
+
+        if (badgeRequest == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+        }
+
+        var result = await _badgeService.UpdateBadgeByIdAsync(badgeId, badgeRequest);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to update badge" });
+        }
+
+        return new OkObjectResult(new { message = "Badge updated successfully" });
+    }
+
+    [Function("RemoveBadgeById")]
+    public async Task<IActionResult> RemoveBadgeById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "badge/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int badgeId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var result = await _badgeService.DeleteBadgeAsync(badgeId);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to remove badge" });
+        }
+
+        return new OkObjectResult(new { message = "Badge removed successfully" });
+    }
+
     [Function("GetAllBadges")]
     public async Task<IActionResult> GetAllBadges(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "badge")] HttpRequest req)

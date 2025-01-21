@@ -3,10 +3,12 @@ namespace Ipitup.Repositories;
 public interface IBadgeRepository
 {
     Task<bool> AddBadgeAsync(Badge badge);
+    Task<bool> DeleteBadgeAsync(int id);
     Task<IEnumerable<Badge>> GetAllBadgesAsync();
     Task<Badge?> GetBadgeByIdAsync(int id);
     Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId);
     Task<bool> AddBadgeToUserAsync(int badgeId, int userId);
+    Task<bool> UpdateBadgeByIdAsync(int id, Badge badge);
 }
 
 public class BadgeRepository : IBadgeRepository
@@ -27,7 +29,7 @@ public class BadgeRepository : IBadgeRepository
             {
                 await connection.OpenAsync();
                 var command = new MySqlCommand(
-                    "INSERT INTO Badge (badgeName, badgeDescription, badgeAmount) VALUES (@name, @description, @amount)", 
+                    "INSERT INTO Badge (badgeName, badgeDescription, badgeAmount) VALUES (@name, @description, @amount)",
                     connection
                 );
                 command.Parameters.AddWithValue("@name", badge.BadgeName);
@@ -104,7 +106,7 @@ public class BadgeRepository : IBadgeRepository
         {
             await connection.OpenAsync();
             var command = new MySqlCommand(
-                "SELECT b.* FROM BadgeUser bu INNER JOIN Badge b ON bu.badgeId = b.badgeId WHERE bu.userId = @userId", 
+                "SELECT b.* FROM BadgeUser bu INNER JOIN Badge b ON bu.badgeId = b.badgeId WHERE bu.userId = @userId",
                 connection
             );
             command.Parameters.AddWithValue("@userId", userId);
@@ -138,6 +140,31 @@ public class BadgeRepository : IBadgeRepository
 
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
+        }
+    }
+
+    public async Task<bool> DeleteBadgeAsync(int id)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("DELETE FROM Badge WHERE badgeId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
+    public async Task<bool> UpdateBadgeByIdAsync(int id, Badge badge)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE Badge SET badgeName = @name, badgeDescription = @description, badgeAmount = @amount WHERE badgeId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@name", badge.BadgeName);
+            command.Parameters.AddWithValue("@description", badge.BadgeDescription ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue("@amount", badge.BadgeAmount);
+            return await command.ExecuteNonQueryAsync() > 0;
         }
     }
 }

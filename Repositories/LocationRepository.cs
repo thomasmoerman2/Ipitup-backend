@@ -5,6 +5,8 @@ public interface ILocationRepository
     Task<bool> AddLocationAsync(Location location);
     Task<IEnumerable<Location>> GetAllLocationsAsync();
     Task<Location?> GetLocationByIdAsync(int id);
+    Task<bool> DeleteLocationAsync(int id);
+    Task<bool> UpdateLocationByIdAsync(int id, Location location);
 }
 
 public class LocationRepository : ILocationRepository
@@ -86,5 +88,29 @@ public class LocationRepository : ILocationRepository
             }
         }
         return null;
+    }
+
+    public async Task<bool> DeleteLocationAsync(int id)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("DELETE FROM Location WHERE locationId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
+    public async Task<bool> UpdateLocationByIdAsync(int id, Location location)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE Location SET locationName = @name, locationCountry = @country WHERE locationId = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@name", location.LocationName);
+            command.Parameters.AddWithValue("@country", location.LocationCountry);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
     }
 }

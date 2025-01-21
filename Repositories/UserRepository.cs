@@ -1,4 +1,7 @@
 namespace Ipitup.Repositories;
+using System.Security.Cryptography;
+using System.Text;
+
 public interface IUserRepository
 {
     Task<bool> CheckConnection();
@@ -8,14 +11,22 @@ public interface IUserRepository
     Task<User?> GetUserByIdAsync(int userId);
     Task<IEnumerable<User>> GetAllUsersAsync();
     Task<User?> GetUserByFullNameAsync(string firstname, string lastname);
+    Task<AuthToken?> CreateAuthTokenAsync(int userId);
+    Task<AuthToken?> GetAuthTokenAsync(string token);
+    Task<bool> InvalidateAuthTokenAsync(string token);
+    Task<bool> VerifyAuthTokenAsync(string token);
 }
+
 public class UserRepository : IUserRepository
 {
     private readonly string _connectionString;
+
     public UserRepository()
     {
-        _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString");
+        _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString")
+                            ?? throw new InvalidOperationException("Database connection string is not set.");
     }
+
     public async Task<bool> CheckConnection()
     {
         try
@@ -31,6 +42,7 @@ public class UserRepository : IUserRepository
             return false;
         }
     }
+
     public async Task<bool> CheckEmailAlreadyExists(string email)
     {
         try
@@ -55,7 +67,7 @@ public class UserRepository : IUserRepository
         }
     }
 
-    public async Task<User?> CheckLoginAuth(string email, string password)
+    public async Task<User> CheckLoginAuth(string email, string password)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -85,7 +97,6 @@ public class UserRepository : IUserRepository
         }
         return null; // Return null als de verificatie mislukt
     }
-
 
     public async Task<User> AddUser(User user)
     {
@@ -209,5 +220,100 @@ public class UserRepository : IUserRepository
             }
         }
         return null;
+    }
+
+    public async Task<AuthToken?> CreateAuthTokenAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+
+            // Generate a secure random token
+            var token = GenerateSecureToken();
+            var createdAt = DateTime.UtcNow;
+            var expiresAt = createdAt.AddDays(7); // Token expires in 7 days
+
+            var command = new MySqlCommand(
+                @"INSERT INTO AuthToken (userId, token, createdAt, expiresAt, isValid) 
+                VALUES (@userId, @token, @createdAt, @expiresAt, true)",
+                connection);
+
+            command.Parameters.AddWithValue("@userId", userId);
+            command.Parameters.AddWithValue("@token", token);
+            command.Parameters.AddWithValue("@createdAt", createdAt);
+            command.Parameters.AddWithValue("@expiresAt", expiresAt);
+
+            await command.ExecuteNonQueryAsync();
+
+            return new AuthToken
+            {
+                UserId = userId,
+                Token = token,
+                CreatedAt = createdAt,
+                ExpiresAt = expiresAt,
+                IsValid = true
+            };
+        }
+    }
+
+    public async Task<AuthToken?> GetAuthTokenAsync(string token)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand(
+                "SELECT * FROM AuthToken WHERE token = @token",
+                connection);
+            command.Parameters.AddWithValue("@token", token);
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                if (await reader.ReadAsync())
+                {
+                    return new AuthToken
+                    {
+                        TokenId = reader.GetInt32(reader.GetOrdinal("tokenId")),
+                        UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                        Token = reader.GetString(reader.GetOrdinal("token")),
+                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdAt")),
+                        ExpiresAt = reader.GetDateTime(reader.GetOrdinal("expiresAt")),
+                        IsValid = reader.GetBoolean(reader.GetOrdinal("isValid"))
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    public async Task<bool> InvalidateAuthTokenAsync(string token)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand(
+                "UPDATE AuthToken SET isValid = false WHERE token = @token",
+                connection);
+            command.Parameters.AddWithValue("@token", token);
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
+    public async Task<bool> VerifyAuthTokenAsync(string token)
+    {
+        var authToken = await GetAuthTokenAsync(token);
+        if (authToken == null) return false;
+
+        return authToken.IsValid && authToken.ExpiresAt > DateTime.UtcNow;
+    }
+
+    private string GenerateSecureToken()
+    {
+        var randomBytes = new byte[32];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(randomBytes);
+        }
+        return Convert.ToBase64String(randomBytes);
     }
 }

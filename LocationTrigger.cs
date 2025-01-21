@@ -34,6 +34,50 @@ public class LocationTrigger
         return new OkObjectResult(new { message = "Location added successfully" });
     }
 
+    [Function("UpdateLocationById")]
+    public async Task<IActionResult> UpdateLocationById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "location/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int locationId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var locationRequest = JsonConvert.DeserializeObject<Location>(requestBody);
+
+        if (locationRequest == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+        }
+
+        var result = await _locationService.UpdateLocationByIdAsync(locationId, locationRequest);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to update location" });
+        }
+
+        return new OkObjectResult(new { message = "Location updated successfully" });
+    }
+
+    [Function("RemoveLocationById")]
+    public async Task<IActionResult> RemoveLocationById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "location/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int locationId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var result = await _locationService.DeleteLocationAsync(locationId);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to remove location" });
+        }
+
+        return new OkObjectResult(new { message = "Location removed successfully" });
+    }
+
     [Function("GetAllLocations")]
     public async Task<IActionResult> GetAllLocations(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "location")] HttpRequest req)

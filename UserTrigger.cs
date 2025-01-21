@@ -1,50 +1,127 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
+
 namespace Ipitup.Functions
 {
     public class UserTrigger
     {
         private readonly ILogger<UserTrigger> _logger;
         private readonly IUserService _userService;
+
         public UserTrigger(ILogger<UserTrigger> logger, IUserService userService)
         {
             _logger = logger;
             _userService = userService;
         }
-        [Function("PostUserLogin")]
-        public async Task<IActionResult> PostUserLogin([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/login")] HttpRequest req)
+
+        [Function("Login")]
+        public async Task<IActionResult> Login([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/login")] HttpRequest req)
         {
             try
             {
-                var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-                var userRequest = JsonConvert.DeserializeObject<User>(requestBody);
-                _logger.LogInformation($"Received request body: {requestBody}");
-                _logger.LogInformation("UserTrigger function worked");
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var loginRequest = System.Text.Json.JsonSerializer.Deserialize<LoginRequest>(requestBody, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
-                if (userRequest == null)
+                if (loginRequest == null || string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
                 {
-                    return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+                    return new BadRequestObjectResult(new { message = "Email and password are required" });
                 }
-                if (userRequest.UserEmail == "" || userRequest.UserPassword == "")
-                {
-                    return new BadRequestObjectResult(new { message = "Invalid request body" });
-                }
-                var user = await _userService.CheckLoginAuth(userRequest.UserEmail, userRequest.UserPassword);
+
+                var user = await _userService.CheckLoginAuth(loginRequest.Email, loginRequest.Password);
                 if (user == null)
                 {
-                    return new BadRequestObjectResult(new { message = "Invalid credentials" });
+                    return new UnauthorizedObjectResult(new { message = "Invalid email or password" });
                 }
+
+                // Create auth token
+                var authToken = await _userService.CreateAuthTokenAsync(user.UserId);
+                if (authToken == null)
+                {
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
+
                 return new OkObjectResult(new
                 {
-                    status = 200,
-                    body = new
-                    {
-                        userId = user.UserId,
-                    }
+                    userId = user.UserId,
+                    firstname = user.UserFirstname,
+                    lastname = user.UserLastname,
+                    email = user.UserEmail,
+                    accountStatus = user.AccountStatus,
+                    authToken = authToken.Token
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in UserTrigger: {ex.Message}");
-                return new BadRequestObjectResult(new { message = "Error processing request", error = ex.Message });
+                _logger.LogError(ex, "Error during login");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private class LoginRequest
+        {
+            public string Email { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
+        }
+
+        [Function("VerifyToken")]
+        public async Task<IActionResult> VerifyToken([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/verify")] HttpRequest req)
+        {
+            try
+            {
+                string? authHeader = req.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+                }
+
+                string token = authHeader.Substring("Bearer ".Length);
+                bool isValid = await _userService.VerifyAuthTokenAsync(token);
+
+                if (!isValid)
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                }
+
+                return new OkResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying token");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [Function("Logout")]
+        public async Task<IActionResult> Logout([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/logout")] HttpRequest req)
+        {
+            try
+            {
+                string? authHeader = req.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+                }
+
+                string token = authHeader.Substring("Bearer ".Length);
+                bool result = await _userService.InvalidateAuthTokenAsync(token);
+
+                if (!result)
+                {
+                    return new BadRequestObjectResult(new { message = "Failed to logout" });
+                }
+
+                return new OkResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during logout");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -130,5 +207,24 @@ namespace Ipitup.Functions
             return new OkObjectResult(user);
         }
 
+        //TODO : PasswordResetByUserId
+        // [Function("PasswordResetByUserId")]
+        // public async Task<IActionResult> PasswordResetByUserId(
+        //     [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/passwordreset/{id}")] HttpRequest req, string id)
+        // {
+        //     if (!int.TryParse(id, out int userId))
+        //     {
+        //         return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        //     }
+
+        //     var result = await _userService.PasswordResetByUserIdAsync(userId);
+        //     if (!result)
+        //     {
+        //         return new BadRequestObjectResult(new { message = "Failed to reset password" });
+        //     }
+
+        //     return new OkObjectResult(new { message = "Password reset successfully" });
+        // }
     }
 }
+

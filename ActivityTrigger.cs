@@ -34,6 +34,49 @@ public class ActivityTrigger
         return new OkObjectResult(new { message = "Activity added successfully" });
     }
 
+    [Function("UpdateActivityById")]
+    public async Task<IActionResult> UpdateActivityById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "activity/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int activityId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var activityRequest = JsonConvert.DeserializeObject<Activity>(requestBody);
+
+        if (activityRequest == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+        }
+
+        var result = await _activityService.UpdateActivityByIdAsync(activityId, activityRequest);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to update activity" });
+        }
+
+        return new OkObjectResult(new { message = "Activity updated successfully" });
+    }
+    [Function("RemoveActivityById")]
+    public async Task<IActionResult> RemoveActivityById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activity/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int activityId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var result = await _activityService.DeleteActivityAsync(activityId);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to remove activity" });
+        }
+
+        return new OkObjectResult(new { message = "Activity removed successfully" });
+    }
+
     [Function("GetAllActivities")]
     public async Task<IActionResult> GetAllActivities(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity")] HttpRequest req)
@@ -77,5 +120,23 @@ public class ActivityTrigger
 
         return new OkObjectResult(activities);
     }
+    [Function("GetLatestActivityUserById")]
+    public async Task<IActionResult> GetLatestActivityUserById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/{userId}")] HttpRequest req, string userId)
+    {
+        if (!int.TryParse(userId, out int userid))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var activity = await _activityService.GetLatestActivityUserByIdAsync(userid);
+        if (activity == null)
+        {
+            return new NotFoundObjectResult(new { message = "Activity not found" });
+        }
+
+        return new OkObjectResult(activity);
+    }
+
 
 }

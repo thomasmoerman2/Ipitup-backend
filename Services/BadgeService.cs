@@ -7,6 +7,8 @@ public interface IBadgeService
     Task<Badge?> GetBadgeByIdAsync(int id);
     Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId);
     Task<bool> AddBadgeToUserAsync(int badgeId, int userId);
+    Task<bool> DeleteBadgeAsync(int id);
+    Task<bool> UpdateBadgeByIdAsync(int id, Badge badge);
 }
 
 public class BadgeService : IBadgeService
@@ -46,5 +48,15 @@ public class BadgeService : IBadgeService
     public async Task<bool> AddBadgeToUserAsync(int badgeId, int userId)
     {
         return await _badgeRepository.AddBadgeToUserAsync(badgeId, userId);
+    }
+
+    public async Task<bool> DeleteBadgeAsync(int id)
+    {
+        return await _badgeRepository.DeleteBadgeAsync(id);
+    }
+
+    public async Task<bool> UpdateBadgeByIdAsync(int id, Badge badge)
+    {
+        return await _badgeRepository.UpdateBadgeByIdAsync(id, badge);
     }
 }

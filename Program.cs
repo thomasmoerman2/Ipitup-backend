@@ -26,11 +26,14 @@ var host = new HostBuilder()
         services.AddScoped<IBadgeService, BadgeService>();
         
         services.AddScoped<IActivityRepository, ActivityRepository>();
-        services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
-        services.AddScoped<IFriendsRepository, FriendsRepository>();
         services.AddScoped<IActivityService, ActivityService>();
+
         services.AddScoped<ILeaderboardService, LeaderboardService>();
-        services.AddScoped<IFriendsService, FriendsService>();
+        services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
+
+        services.AddScoped<IFollowRepository, FollowRepository>();
+        services.AddScoped<IFollowService, FollowService>();
+        
     })
 
     .Build();

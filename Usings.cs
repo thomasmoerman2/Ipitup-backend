@@ -8,7 +8,6 @@ global using Microsoft.AspNetCore.Http;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.EntityFrameworkCore;
-global using Ipitup.Context;
 global using System;
 global using Ipitup.Repositories;
 global using Microsoft.Extensions.Configuration;

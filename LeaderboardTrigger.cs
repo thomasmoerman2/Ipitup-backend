@@ -14,32 +14,9 @@ public class LeaderboardTrigger
         _activityRepository = activityRepository;
     }
 
-    [Function("PostLeaderboardEntry")]
-    public async Task<IActionResult> PostLeaderboardEntry(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "leaderboard/add")] HttpRequest req)
-    {
-        _logger.LogInformation("PostLeaderboardEntry function triggered");
-
-        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        var leaderboardRequest = JsonConvert.DeserializeObject<Leaderboard>(requestBody);
-
-        if (leaderboardRequest == null)
-        {
-            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
-        }
-
-        var result = await _leaderboardService.AddLeaderboardEntryAsync(leaderboardRequest);
-        if (!result)
-        {
-            return new BadRequestObjectResult(new { message = "Failed to add leaderboard entry" });
-        }
-
-        return new OkObjectResult(new { message = "Leaderboard entry added successfully" });
-    }
-
     [Function("GetLeaderboardById")]
     public async Task<IActionResult> GetLeaderboardById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/byid/{id}")] HttpRequest req, string id)
     {
         if (!int.TryParse(id, out int leaderboardId))
         {
@@ -75,4 +52,54 @@ public class LeaderboardTrigger
         var leaderboardEntries = await _leaderboardService.GetAllLeaderboardEntriesAsync();
         return new OkObjectResult(leaderboardEntries);
     }
+
+    [Function("GetLeaderboardWithFilters")]
+public async Task<IActionResult> GetLeaderboardWithFilters(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/filter")] HttpRequest req)
+{
+    var locationIdQuery = req.Query["locationIds"].ToString();
+    var minAgeQuery = req.Query["minAge"];
+    var maxAgeQuery = req.Query["maxAge"];
+
+    List<int>? locationIds = null;
+    int? minAge = null;
+    int? maxAge = null;
+
+    if (!string.IsNullOrWhiteSpace(locationIdQuery))
+    {
+        locationIds = locationIdQuery
+            .Split(',')
+            .Select(id => int.TryParse(id, out int locId) ? locId : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id.Value)
+            .ToList();
+
+        if (locationIds.Count == 0)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid location ID format. Must be a comma-separated list of numbers." });
+        }
+    }
+
+    if (!string.IsNullOrWhiteSpace(minAgeQuery) && int.TryParse(minAgeQuery, out int min))
+    {
+        minAge = min;
+    }
+
+    if (!string.IsNullOrWhiteSpace(maxAgeQuery) && int.TryParse(maxAgeQuery, out int max))
+    {
+        maxAge = max;
+    }
+
+    var leaderboardEntries = await _leaderboardService.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge);
+
+    if (!leaderboardEntries.Any())
+    {
+        return new NotFoundObjectResult(new { message = "No leaderboard entries found with given filters." });
+    }
+
+    return new OkObjectResult(leaderboardEntries);
+}
+
+
+
 }

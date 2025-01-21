@@ -6,7 +6,13 @@ public interface ILeaderboardService
     Task<Leaderboard?> GetLeaderboardByIdAsync(int leaderboardId);
     Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId);
     Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
-    Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore); // Add this line
+    Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore);
+    Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge);
+
+
+
+
+    Task<IEnumerable<User>> GetTopUsersByTotalScoreAsync(int top);
 }
 
 
@@ -61,5 +67,35 @@ public class LeaderboardService : ILeaderboardService
     {
         return await _leaderboardRepository.UpdateLeaderboardScoreAsync(userId, locationId, activityScore);
     }
+
+    public async Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge)
+    {
+        return await _leaderboardRepository.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge);
+    }
+
+
+
+    public async Task<IEnumerable<User>> GetTopUsersByTotalScoreAsync(int top)
+    {
+        if (top <= 0)
+        {
+            throw new ArgumentException("Top must be greater than 0");
+        }
+
+        var users = await _userRepository.GetAllUsersAsync();
+        var leaderboards = await _leaderboardRepository.GetAllLeaderboardEntriesAsync();
+
+        var userScores = users.Select(u => new
+        {
+            UserId = u.UserId,
+            TotalScore = leaderboards.Where(l => l.UserId == u.UserId).Sum(l => l.Score)
+        });
+
+        var topUsers = userScores.OrderByDescending(u => u.TotalScore).Take(top);
+        var topUserIds = topUsers.Select(u => u.UserId).ToList();
+
+        return users.Where(u => topUserIds.Contains(u.UserId));
+    }
+
 
 }

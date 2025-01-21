@@ -7,6 +7,10 @@ public interface ILeaderboardRepository
     Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId);
     Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
     Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore);
+    Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge);
+
+
+
 }
 
 public class LeaderboardRepository : ILeaderboardRepository
@@ -142,6 +146,107 @@ public class LeaderboardRepository : ILeaderboardRepository
             return updateResult > 0;
         }
     }
+
+    public async Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge)
+    {
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        string query;
+        var parameters = new List<MySqlParameter>();
+
+        string ageCondition = "";
+        if (minAge.HasValue)
+        {
+            ageCondition += " AND TIMESTAMPDIFF(YEAR, u.birthDate, CURDATE()) >= @minAge";
+            parameters.Add(new MySqlParameter("@minAge", minAge.Value));
+        }
+        if (maxAge.HasValue)
+        {
+            ageCondition += " AND TIMESTAMPDIFF(YEAR, u.birthDate, CURDATE()) <= @maxAge";
+            parameters.Add(new MySqlParameter("@maxAge", maxAge.Value));
+        }
+
+        if (locationIds == null || locationIds.Count == 0)
+        {
+            // Haal de totale score van alle gebruikers op met leeftijdsfilter
+            query = $@"
+                SELECT 
+                    u.userId, 
+                    u.userFirstname, 
+                    u.userLastname, 
+                    u.avatar, 
+                    u.userEmail, 
+                    u.totalScore, 
+                    TIMESTAMPDIFF(YEAR, u.birthDate, CURDATE()) AS Age
+                FROM User u 
+                WHERE 1=1 {ageCondition}
+                ORDER BY u.totalScore DESC 
+                LIMIT 10;";
+        }
+        else
+        {
+            // Haal leaderboard entries gefilterd op locaties en leeftijd op
+            query = $@"
+                SELECT 
+                    u.userId, 
+                    u.userFirstname, 
+                    u.userLastname, 
+                    u.avatar, 
+                    u.userEmail, 
+                    u.totalScore, 
+                    SUM(l.score) AS totalLocationScore, 
+                    TIMESTAMPDIFF(YEAR, u.birthDate, CURDATE()) AS Age
+                FROM Leaderboard l
+                INNER JOIN User u ON l.userId = u.userId
+                WHERE l.locationId IN ({string.Join(",", locationIds.Select(id => id.ToString()))})
+                {ageCondition}
+                GROUP BY u.userId, u.userFirstname, u.userLastname, u.avatar, u.userEmail, u.totalScore, Age
+                ORDER BY totalLocationScore DESC
+                LIMIT 10;";
+        }
+
+        using var command = new MySqlCommand(query, connection);
+        command.Parameters.AddRange(parameters.ToArray());
+
+        var leaderboardEntries = new List<dynamic>();
+
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            if (locationIds == null || locationIds.Count == 0)
+            {
+                leaderboardEntries.Add(new
+                {
+                    UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                    Firstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                    Lastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                    Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                    Email = reader.GetString(reader.GetOrdinal("userEmail")),
+                    TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore")),
+                    Age = reader.GetInt32(reader.GetOrdinal("Age"))
+                });
+            }
+            else
+            {
+                leaderboardEntries.Add(new
+                {
+                    UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                    Firstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                    Lastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                    Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                    Email = reader.GetString(reader.GetOrdinal("userEmail")),
+                    TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore")),
+                    TotalLocationScore = reader.GetInt32(reader.GetOrdinal("totalLocationScore")),
+                    Age = reader.GetInt32(reader.GetOrdinal("Age"))
+                });
+            }
+        }
+
+        return leaderboardEntries;
+    }
+
+
 
 
 }

@@ -3,11 +3,13 @@ namespace Ipitup.Repositories;
 public interface IFollowRepository
 {
     Task<bool> AddFollowAsync(Follow follow);
-    Task<bool> AcceptFollowRequestAsync(int followerId, int followingId);
     Task<bool> RemoveFollowAsync(int followerId, int followingId);
+    Task<bool> AcceptFollowRequestAsync(int followerId, int followingId);
+    Task<bool> RemoveFollowerAsync(int followerId, int followingId);
     Task<IEnumerable<Follow>> GetFollowersAsync(int userId);
     Task<IEnumerable<Follow>> GetFollowingAsync(int userId);
-    Task<bool> IsFollowingAsync(int followerId, int followingId);
+    Task<bool> RejectFollowRequestAsync(int followerId, int followingId);
+
 }
 
 public class FollowRepository : IFollowRepository
@@ -110,15 +112,33 @@ public class FollowRepository : IFollowRepository
         return following;
     }
 
-    public async Task<bool> IsFollowingAsync(int followerId, int followingId)
+    public async Task<bool> RejectFollowRequestAsync(int followerId, int followingId)
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand("SELECT COUNT(*) FROM Follow WHERE followerId = @followerId AND followingId = @followingId", connection);
+        var command = new MySqlCommand(@"
+            UPDATE Follow 
+            SET status = 'Rejected' 
+            WHERE followerId = @followerId AND followingId = @followingId", connection);
+
         command.Parameters.AddWithValue("@followerId", followerId);
         command.Parameters.AddWithValue("@followingId", followingId);
 
-        var count = Convert.ToInt32(await command.ExecuteScalarAsync());
-        return count > 0;
+        return await command.ExecuteNonQueryAsync() > 0;
     }
+
+    public async Task<bool> RemoveFollowerAsync(int followerId, int followingId)
+    {
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var command = new MySqlCommand(@"
+            DELETE FROM Follow 
+            WHERE followerId = @followerId AND followingId = @followingId", connection);
+
+        command.Parameters.AddWithValue("@followerId", followerId);
+        command.Parameters.AddWithValue("@followingId", followingId);
+
+        return await command.ExecuteNonQueryAsync() > 0;
+    }
+
 }

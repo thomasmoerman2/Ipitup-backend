@@ -64,4 +64,35 @@ public class FollowTrigger
         return result ? new OkObjectResult(new { message = "User unfollowed successfully" }) : new BadRequestObjectResult(new { message = "Failed to unfollow user" });
     }
 
+    [Function("RejectFollowRequest")]
+    public async Task<IActionResult> RejectFollowRequest(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "follow/reject")] HttpRequest req)
+    {
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var follow = JsonConvert.DeserializeObject<Follow>(requestBody);
+        if (follow == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid request data" });
+        }
+
+        var result = await _followService.RejectFollowRequestAsync(follow.FollowerId, follow.FollowingId);
+        return result ? new OkObjectResult(new { message = "Follow request rejected" }) : new BadRequestObjectResult(new { message = "Failed to reject follow request" });
+    }
+
+    [Function("RemoveFollower")]
+    public async Task<IActionResult> RemoveFollower(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "follow/remove")] HttpRequest req)
+    {
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var follow = JsonConvert.DeserializeObject<Follow>(requestBody);
+        if (follow == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid request data" });
+        }
+
+        var result = await _followService.RemoveFollowerAsync(follow.FollowerId, follow.FollowingId);
+        return result ? new OkObjectResult(new { message = "Follower removed successfully" }) : new BadRequestObjectResult(new { message = "Failed to remove follower" });
+    }
+
+
 }

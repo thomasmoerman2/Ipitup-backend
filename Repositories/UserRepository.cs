@@ -15,6 +15,7 @@ public interface IUserRepository
     Task<AuthToken?> GetAuthTokenAsync(string token);
     Task<bool> InvalidateAuthTokenAsync(string token);
     Task<bool> VerifyAuthTokenAsync(string token);
+    Task<string> PasswordResetByUserIdAsync(int userId);
 }
 
 public class UserRepository : IUserRepository
@@ -315,5 +316,19 @@ public class UserRepository : IUserRepository
             rng.GetBytes(randomBytes);
         }
         return Convert.ToBase64String(randomBytes);
+    }
+
+    public async Task<string> PasswordResetByUserIdAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE User SET userPassword = @password WHERE userId = @userId", connection);
+            var newPassword = GenerateSecureToken();
+            command.Parameters.AddWithValue("@password", BCrypt.Net.BCrypt.HashPassword(newPassword));
+            command.Parameters.AddWithValue("@userId", userId);
+            await command.ExecuteNonQueryAsync();
+            return newPassword;
+        }
     }
 }

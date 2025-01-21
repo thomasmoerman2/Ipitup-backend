@@ -11,6 +11,7 @@ public interface IUserService
     Task<AuthToken?> CreateAuthTokenAsync(int userId);
     Task<bool> VerifyAuthTokenAsync(string token);
     Task<bool> InvalidateAuthTokenAsync(string token);
+    Task<string> PasswordResetByUserIdAsync(int userId);
 }
 public class UserService : IUserService
 {
@@ -68,5 +69,10 @@ public class UserService : IUserService
     public async Task<bool> InvalidateAuthTokenAsync(string token)
     {
         return await _userRepository.InvalidateAuthTokenAsync(token);
+    }
+
+    public async Task<string> PasswordResetByUserIdAsync(int userId)
+    {
+        return await _userRepository.PasswordResetByUserIdAsync(userId);
     }
 }

@@ -148,4 +148,23 @@ public class BadgeTrigger
         });
     }
 
+    [Function("GetLatestBadgesByUserId")]
+    public async Task<IActionResult> GetLatestBadgesByUserId(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "badge/user/latest/{userId}")] HttpRequest req, string userId)
+    {
+        if (!int.TryParse(userId, out int userIdParsed))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var badges = await _badgeService.GetLatestBadgesByUserIdAsync(userIdParsed, 8);  // Haal max 8 op
+        if (badges == null || !badges.Any())
+        {
+            return new NotFoundObjectResult(new { message = "No badges found for this user." });
+        }
+
+        return new OkObjectResult(badges);
+    }
+
+
 }

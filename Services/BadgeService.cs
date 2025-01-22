@@ -9,6 +9,7 @@ public interface IBadgeService
     Task<bool> AddBadgeToUserAsync(int badgeId, int userId);
     Task<bool> DeleteBadgeAsync(int id);
     Task<bool> UpdateBadgeByIdAsync(int id, Badge badge);
+    Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount);  
 }
 
 public class BadgeService : IBadgeService
@@ -59,4 +60,10 @@ public class BadgeService : IBadgeService
     {
         return await _badgeRepository.UpdateBadgeByIdAsync(id, badge);
     }
+
+    public async Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount)
+    {
+        return await _badgeRepository.GetLatestBadgesByUserIdAsync(userId, maxCount);
+    }
+
 }

@@ -9,6 +9,7 @@ public interface IBadgeRepository
     Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId);
     Task<bool> AddBadgeToUserAsync(int badgeId, int userId);
     Task<bool> UpdateBadgeByIdAsync(int id, Badge badge);
+    Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount);  
 }
 
 public class BadgeRepository : IBadgeRepository
@@ -167,4 +168,40 @@ public class BadgeRepository : IBadgeRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
+
+    public async Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount)
+    {
+        var badges = new List<Badge>();
+
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand(
+                "SELECT b.* FROM BadgeUser bu " +
+                "INNER JOIN Badge b ON bu.badgeId = b.badgeId " +
+                "WHERE bu.userId = @userId " +
+                "ORDER BY bu.BadgeId DESC " +
+                "LIMIT @maxCount", connection
+            );
+            command.Parameters.AddWithValue("@userId", userId);
+            command.Parameters.AddWithValue("@maxCount", maxCount);
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    badges.Add(new Badge
+                    {
+                        BadgeId = reader.GetInt32(reader.GetOrdinal("badgeId")),
+                        BadgeName = reader.GetString(reader.GetOrdinal("badgeName")),
+                        BadgeDescription = reader.IsDBNull(reader.GetOrdinal("badgeDescription")) ? null : reader.GetString(reader.GetOrdinal("badgeDescription")),
+                        BadgeAmount = reader.GetInt32(reader.GetOrdinal("badgeAmount"))
+                    });
+                }
+            }
+        }
+
+        return badges;
+    }
+
 }

@@ -53,7 +53,8 @@ namespace Ipitup.Functions
                     lastname = user.UserLastname,
                     email = user.UserEmail,
                     accountStatus = user.AccountStatus,
-                    authToken = authToken.Token
+                    authToken = authToken.Token,
+                    isAdmin = user.IsAdmin
                 });
             }
             catch (Exception ex)
@@ -191,7 +192,7 @@ namespace Ipitup.Functions
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
 
-            return new OkObjectResult(user);
+            return new OkObjectResult(new { userId = user.UserId, firstname = user.UserFirstname, lastname = user.UserLastname, email = user.UserEmail, accountStatus = user.AccountStatus, dailyStreak = user.DailyStreak, totalScore = user.TotalScore, isAdmin = user.IsAdmin });
         }
 
         [Function("GetAllUsers")]
@@ -242,7 +243,7 @@ namespace Ipitup.Functions
         }
 
 
-        
+
         [Function("PasswordResetByUserId")]
         public async Task<IActionResult> PasswordResetByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/reset-password")] HttpRequest req)

@@ -7,8 +7,7 @@ public interface ILeaderboardRepository
     Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId);
     Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
     Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore);
-    Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge);
-
+    Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge, string? sortType, int userId);
 
 
 }
@@ -147,7 +146,7 @@ public class LeaderboardRepository : ILeaderboardRepository
         }
     }
 
-    public async Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge)
+    public async Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge, string? sortType, int userId)
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
@@ -167,9 +166,24 @@ public class LeaderboardRepository : ILeaderboardRepository
             parameters.Add(new MySqlParameter("@maxAge", maxAge.Value));
         }
 
+        string sortCondition = "";
+
+        if (sortType == "lokaal")
+        {
+            sortCondition = " AND u.userCountry = 'Belgium'";
+        }
+        else if (sortType == "volgend")
+        {
+            sortCondition = @"
+                AND u.userId IN (
+                    SELECT followingId FROM Follow WHERE followerId = @userId AND status = 'Accepted'
+                )";
+            parameters.Add(new MySqlParameter("@userId", userId));
+        }
+
         if (locationIds == null || locationIds.Count == 0)
         {
-            // Haal de totale score van alle gebruikers op met leeftijdsfilter
+            // Haal de totale score van alle gebruikers op met leeftijdsfilter en sortering
             query = $@"
                 SELECT 
                     u.userId, 
@@ -180,13 +194,13 @@ public class LeaderboardRepository : ILeaderboardRepository
                     u.totalScore, 
                     TIMESTAMPDIFF(YEAR, u.birthDate, CURDATE()) AS Age
                 FROM User u 
-                WHERE 1=1 {ageCondition}
+                WHERE 1=1 {ageCondition} {sortCondition}
                 ORDER BY u.totalScore DESC 
                 LIMIT 10;";
         }
         else
         {
-            // Haal leaderboard entries gefilterd op locaties en leeftijd op
+            // Haal leaderboard entries gefilterd op locaties, leeftijd en sortering op
             query = $@"
                 SELECT 
                     u.userId, 
@@ -200,7 +214,7 @@ public class LeaderboardRepository : ILeaderboardRepository
                 FROM Leaderboard l
                 INNER JOIN User u ON l.userId = u.userId
                 WHERE l.locationId IN ({string.Join(",", locationIds.Select(id => id.ToString()))})
-                {ageCondition}
+                {ageCondition} {sortCondition}
                 GROUP BY u.userId, u.userFirstname, u.userLastname, u.avatar, u.userEmail, u.totalScore, Age
                 ORDER BY totalLocationScore DESC
                 LIMIT 10;";
@@ -245,8 +259,6 @@ public class LeaderboardRepository : ILeaderboardRepository
 
         return leaderboardEntries;
     }
-
-
 
 
 }

@@ -60,10 +60,13 @@ public async Task<IActionResult> GetLeaderboardWithFilters(
     var locationIdQuery = req.Query["locationIds"].ToString();
     var minAgeQuery = req.Query["minAge"];
     var maxAgeQuery = req.Query["maxAge"];
+    var sortType = req.Query["sortType"].ToString();
+    var userIdQuery = req.Query["userId"];
 
     List<int>? locationIds = null;
     int? minAge = null;
     int? maxAge = null;
+    int userId = 0;
 
     if (!string.IsNullOrWhiteSpace(locationIdQuery))
     {
@@ -73,11 +76,6 @@ public async Task<IActionResult> GetLeaderboardWithFilters(
             .Where(id => id.HasValue)
             .Select(id => id.Value)
             .ToList();
-
-        if (locationIds.Count == 0)
-        {
-            return new BadRequestObjectResult(new { message = "Invalid location ID format. Must be a comma-separated list of numbers." });
-        }
     }
 
     if (!string.IsNullOrWhiteSpace(minAgeQuery) && int.TryParse(minAgeQuery, out int min))
@@ -90,7 +88,12 @@ public async Task<IActionResult> GetLeaderboardWithFilters(
         maxAge = max;
     }
 
-    var leaderboardEntries = await _leaderboardService.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge);
+    if (!string.IsNullOrWhiteSpace(userIdQuery) && int.TryParse(userIdQuery, out int parsedUserId))
+    {
+        userId = parsedUserId;
+    }
+
+    var leaderboardEntries = await _leaderboardService.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge, sortType, userId);
 
     if (!leaderboardEntries.Any())
     {

@@ -155,12 +155,19 @@ namespace Ipitup.Functions
                 {
                     return new BadRequestObjectResult(new { message = "User already exists" });
                 }
-                var authToken = await _userService.CreateAuthTokenAsync(user.UserId);
-                if (authToken == null)
+                if (user.UserId > 0)
                 {
-                    return new BadRequestObjectResult(new { message = "Failed to create auth token" });
+                    var authToken = await _userService.CreateAuthTokenAsync(user.UserId);
+                    if (authToken == null)
+                    {
+                        return new BadRequestObjectResult(new { message = "Failed to create auth token" });
+                    }
+                    return new OkObjectResult(new { message = "UserTrigger worked!", body = userRequest, authToken = authToken.Token });
                 }
-                return new OkObjectResult(new { message = "UserTrigger worked!", body = userRequest, authToken = authToken.Token });
+                else
+                {
+                    return new BadRequestObjectResult(new { message = "User created, failed to generate token" });
+                }
             }
             catch (Exception ex)
             {

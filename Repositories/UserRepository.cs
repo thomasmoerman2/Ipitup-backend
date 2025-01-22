@@ -124,6 +124,7 @@ public class UserRepository : IUserRepository
             var result = await command.ExecuteNonQueryAsync();
             if (result > 0)
             {
+                user.UserId = (int)command.LastInsertedId;
                 return user;
             }
             else

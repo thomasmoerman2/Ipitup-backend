@@ -4,7 +4,7 @@ public class User
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    [JsonProperty("userid")]
+    [JsonProperty("id")]
     public int UserId { get; set; }
     [Required]
     [StringLength(255)]

@@ -62,14 +62,17 @@ public class BadgeTrigger
 
     [Function("RemoveBadgeById")]
     public async Task<IActionResult> RemoveBadgeById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "badge/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "badge/remove")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int badgeId))
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var badgeRequest = JsonConvert.DeserializeObject<Badge>(requestBody);
+
+        if (badgeRequest == null)
         {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _badgeService.DeleteBadgeAsync(badgeId);
+        var result = await _badgeService.DeleteBadgeAsync(badgeRequest.BadgeId);
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to remove badge" });

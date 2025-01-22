@@ -61,14 +61,17 @@ public class ActivityTrigger
     }
     [Function("RemoveActivityById")]
     public async Task<IActionResult> RemoveActivityById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activity/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activity/remove")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int activityId))
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var activityRequest = JsonConvert.DeserializeObject<Activity>(requestBody);
+
+        if (activityRequest == null)
         {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _activityService.DeleteActivityAsync(activityId);
+        var result = await _activityService.DeleteActivityAsync(activityRequest.ActivityId);
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to remove activity" });

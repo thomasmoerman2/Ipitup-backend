@@ -70,7 +70,7 @@ namespace Ipitup.Functions
         }
 
         [Function("VerifyToken")]
-        public async Task<IActionResult> VerifyToken([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/verify")] HttpRequest req)
+        public async Task<IActionResult> VerifyToken([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "verify")] HttpRequest req)
         {
             _logger.LogInformation("=====>>>> VerifyToken function called");
             try

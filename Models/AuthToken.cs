@@ -1,4 +1,7 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 
 namespace Ipitup.Models
 {
@@ -8,7 +11,7 @@ namespace Ipitup.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [JsonProperty("tokenid")]
         public int TokenId { get; set; }
-        [JsonProperty("userid")]
+        [JsonProperty("id")]
         public int UserId { get; set; }
         [JsonProperty("token")]
         public required string Token { get; set; }

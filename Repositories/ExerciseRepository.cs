@@ -8,6 +8,7 @@ public interface IExerciseRepository
     Task<List<Exercise>> GetRandomExerciseAsync();
     Task<bool> DeleteExerciseAsync(int id);
     Task<bool> UpdateExerciseByIdAsync(int id, Exercise exercise);
+    Task<List<Exercise>> GetAllExercisesByCategoriesAsync(List<string> categories);
 }
 
 public class ExerciseRepository : IExerciseRepository
@@ -154,6 +155,7 @@ public class ExerciseRepository : IExerciseRepository
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
+            Console.WriteLine($"Attempting to delete exercise with ID: {id}");
             await connection.OpenAsync();
             var command = new MySqlCommand("DELETE FROM Exercise WHERE exerciseId = @id", connection);
             command.Parameters.AddWithValue("@id", id);
@@ -174,5 +176,31 @@ public class ExerciseRepository : IExerciseRepository
             command.Parameters.AddWithValue("@time", exercise.ExerciseTime);
             return await command.ExecuteNonQueryAsync() > 0;
         }
+    }
+
+    public async Task<List<Exercise>> GetAllExercisesByCategoriesAsync(List<string> categories)
+    {
+        var exercises = new List<Exercise>();
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT * FROM Exercise WHERE exerciseType IN @categories", connection);
+            command.Parameters.AddWithValue("@categories", categories);
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    exercises.Add(new Exercise
+                    {
+                        ExerciseId = reader.GetInt32(reader.GetOrdinal("exerciseId")),
+                        ExerciseName = reader.GetString(reader.GetOrdinal("exerciseName")),
+                        ExerciseType = reader.GetString(reader.GetOrdinal("exerciseType")),
+                        ExerciseInstructions = reader.IsDBNull(reader.GetOrdinal("exerciseInstructions")) ? null : reader.GetString(reader.GetOrdinal("exerciseInstructions")),
+                        ExerciseTime = reader.GetInt32(reader.GetOrdinal("exerciseTime"))
+                    });
+                }
+            }
+        }
+        return exercises;
     }
 }

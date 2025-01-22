@@ -43,7 +43,7 @@ namespace Ipitup.Functions
                 var authToken = await _userService.CreateAuthTokenAsync(user.UserId);
                 if (authToken == null)
                 {
-                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                    return new BadRequestObjectResult(new { message = "Failed to create auth token" });
                 }
 
                 return new OkObjectResult(new
@@ -70,15 +70,18 @@ namespace Ipitup.Functions
         }
 
         [Function("VerifyToken")]
-        public async Task<IActionResult> VerifyToken([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/verify")] HttpRequest req)
+        public async Task<IActionResult> VerifyToken([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "verify")] HttpRequest req)
         {
+            _logger.LogInformation("=====>>>> VerifyToken function called");
             try
             {
                 string? authHeader = req.Headers["Authorization"].FirstOrDefault();
+                _logger.LogInformation($"AuthHeader: {authHeader}");
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                 {
                     return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
                 }
+                _logger.LogInformation($"AuthHeader: {authHeader}");
 
                 string token = authHeader.Substring("Bearer ".Length);
                 bool isValid = await _userService.VerifyAuthTokenAsync(token);
@@ -151,7 +154,12 @@ namespace Ipitup.Functions
                 {
                     return new BadRequestObjectResult(new { message = "User already exists" });
                 }
-                return new OkObjectResult(new { message = "UserTrigger worked!", body = userRequest });
+                var authToken = await _userService.CreateAuthTokenAsync(user.UserId);
+                if (authToken == null)
+                {
+                    return new BadRequestObjectResult(new { message = "Failed to create auth token" });
+                }
+                return new OkObjectResult(new { message = "UserTrigger worked!", body = userRequest, authToken = authToken.Token });
             }
             catch (Exception ex)
             {
@@ -207,24 +215,46 @@ namespace Ipitup.Functions
             return new OkObjectResult(user);
         }
 
-        //TODO : PasswordResetByUserId
-        // [Function("PasswordResetByUserId")]
-        // public async Task<IActionResult> PasswordResetByUserId(
-        //     [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/passwordreset/{id}")] HttpRequest req, string id)
-        // {
-        //     if (!int.TryParse(id, out int userId))
-        //     {
-        //         return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
-        //     }
+        [Function("PasswordResetByUserId")]
+        public async Task<IActionResult> PasswordResetByUserId(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/reset-password")] HttpRequest req)
+        {
+            try
+            {
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var request = System.Text.Json.JsonSerializer.Deserialize<PasswordResetRequest>(requestBody, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
-        //     var result = await _userService.PasswordResetByUserIdAsync(userId);
-        //     if (!result)
-        //     {
-        //         return new BadRequestObjectResult(new { message = "Failed to reset password" });
-        //     }
+                if (request == null || request.UserId <= 0)
+                {
+                    return new BadRequestObjectResult(new { message = "Invalid request. User ID is required." });
+                }
 
-        //     return new OkObjectResult(new { message = "Password reset successfully" });
-        // }
+                var result = await _userService.PasswordResetByUserIdAsync(request.UserId);
+                if (string.IsNullOrEmpty(result))
+                {
+                    return new BadRequestObjectResult(new { message = "Failed to reset password" });
+                }
+
+                return new OkObjectResult(new
+                {
+                    message = "Password reset successfully",
+                    newPassword = result
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting password");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private class PasswordResetRequest
+        {
+            public int UserId { get; set; }
+        }
     }
 }
 

@@ -62,14 +62,17 @@ public class LocationTrigger
 
     [Function("RemoveLocationById")]
     public async Task<IActionResult> RemoveLocationById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "location/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "location/remove")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int locationId))
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var locationRequest = JsonConvert.DeserializeObject<Location>(requestBody);
+
+        if (locationRequest == null)
         {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _locationService.DeleteLocationAsync(locationId);
+        var result = await _locationService.DeleteLocationAsync(locationRequest.LocationId);
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to remove location" });

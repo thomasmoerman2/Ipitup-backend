@@ -62,14 +62,19 @@ public class ExerciseTrigger
 
     [Function("RemoveExerciseById")]
     public async Task<IActionResult> RemoveExerciseById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "exercise/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "exercise/remove")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int exerciseId))
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+
+        var exerciseRequest = JsonConvert.DeserializeObject<Exercise>(requestBody);
+
+        if (exerciseRequest == null)
         {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _exerciseService.DeleteExerciseAsync(exerciseId);
+        var result = await _exerciseService.DeleteExerciseAsync(exerciseRequest.ExerciseId);
+
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to remove exercise" });
@@ -80,7 +85,7 @@ public class ExerciseTrigger
 
     [Function("GetAllExercises")]
     public async Task<IActionResult> GetAllExercises(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercise")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercises")] HttpRequest req)
     {
         var exercises = await _exerciseService.GetAllExercisesAsync();
         return new OkObjectResult(exercises);
@@ -107,7 +112,7 @@ public class ExerciseTrigger
 
     [Function("GetRandomExercise")]
     public async Task<IActionResult> GetRandomExercise(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercise/random")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercises/random")] HttpRequest req)
 
     {
         var exercise = await _exerciseService.GetRandomExerciseAsync();
@@ -118,6 +123,20 @@ public class ExerciseTrigger
         }
 
         return new OkObjectResult(exercise);
+    }
+
+    [Function("GetAllExercisesByCategories")]
+    public async Task<IActionResult> GetAllExercisesByCategories(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "exercises/category/{category}")] HttpRequest req, string category)
+
+    {
+        if (string.IsNullOrEmpty(category))
+        {
+            return new BadRequestObjectResult(new { message = "Category is required" });
+        }
+
+        var exercises = await _exerciseService.GetAllExercisesByCategoriesAsync(new List<string> { category });
+        return new OkObjectResult(exercises);
     }
 
 }

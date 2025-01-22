@@ -11,6 +11,8 @@ public interface IUserService
     Task<AuthToken?> CreateAuthTokenAsync(int userId);
     Task<bool> VerifyAuthTokenAsync(string token);
     Task<bool> InvalidateAuthTokenAsync(string token);
+    Task<string> PasswordResetByUserIdAsync(int userId);
+
     Task<bool> UpdateUserTotalScoreAsync(int userId, int score);
 }
 
@@ -72,8 +74,15 @@ public class UserService : IUserService
         return await _userRepository.InvalidateAuthTokenAsync(token);
     }
 
-    public async Task<bool> UpdateUserTotalScoreAsync(int userId, int score)
+
+    public async Task<string> PasswordResetByUserIdAsync(int userId)
     {
-        return await _userRepository.UpdateUserTotalScoreAsync(userId, score);
+        return await _userRepository.PasswordResetByUserIdAsync(userId);
+    }
+
+
+    public async Task<string> PasswordResetByUserIdAsync(int userId)
+    {
+        return await _userRepository.PasswordResetByUserIdAsync(userId);
     }
 }

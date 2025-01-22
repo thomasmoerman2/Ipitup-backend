@@ -139,8 +139,9 @@ namespace Ipitup.Functions
                 {
                     return new BadRequestObjectResult(new { message = "Invalid JSON format" });
                 }
-                if (userRequest.UserEmail == "" || userRequest.UserPassword == "" || userRequest.UserFirstname == "" || userRequest.UserLastname == "" || userRequest.Avatar == "" || userRequest.BirthDate == DateTime.MinValue)
+                if (userRequest.UserEmail == "" || userRequest.UserPassword == "" || userRequest.UserFirstname == "" || userRequest.UserLastname == "" || userRequest.BirthDate == DateTime.MinValue)
                 {
+                    _logger.LogError($"Invalid request body: UserEmail={userRequest.UserEmail}, UserPassword={userRequest.UserPassword}, UserFirstname={userRequest.UserFirstname}, UserLastname={userRequest.UserLastname}, BirthDate={userRequest.BirthDate}. One or more of these values are empty or invalid.");
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
                 }
 
@@ -249,6 +250,29 @@ namespace Ipitup.Functions
                 _logger.LogError(ex, "Error resetting password");
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
+        }
+
+        [Function("UpdateUserIsAdmin")]
+        public async Task<IActionResult> UpdateUserIsAdmin(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/admin")] HttpRequest req)
+        {
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var userRequest = JsonConvert.DeserializeObject<User>(requestBody);
+            if (userRequest == null)
+            {
+                return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+            }
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+            }
+            var result = await _userService.UpdateUserIsAdminAsync(userRequest.UserId, userRequest.IsAdmin, authHeader.Substring("Bearer ".Length));
+            if (!result)
+            {
+                return new BadRequestObjectResult(new { message = "Failed to update user is admin" });
+            }
+            return new OkObjectResult(new { message = "User is admin updated successfully" });
         }
 
         private class PasswordResetRequest

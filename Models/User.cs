@@ -34,6 +34,9 @@ public class User
     public DateTime BirthDate { get; set; }
     [JsonProperty("totalscore")]
     public int TotalScore { get; set; } = 0;
+
+    [JsonProperty("isAdmin")]
+    public bool IsAdmin { get; set; } = false;
 }
 public enum AccountStatus
 {

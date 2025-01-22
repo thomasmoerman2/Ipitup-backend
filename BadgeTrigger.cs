@@ -36,13 +36,8 @@ public class BadgeTrigger
 
     [Function("UpdateBadgeById")]
     public async Task<IActionResult> UpdateBadgeById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "badge/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "badge/update")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int badgeId))
-        {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
-        }
-
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var badgeRequest = JsonConvert.DeserializeObject<Badge>(requestBody);
 
@@ -51,7 +46,7 @@ public class BadgeTrigger
             return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _badgeService.UpdateBadgeByIdAsync(badgeId, badgeRequest);
+        var result = await _badgeService.UpdateBadgeByIdAsync(badgeRequest.BadgeId, badgeRequest);
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to update badge" });

@@ -36,14 +36,10 @@ public class ExerciseTrigger
 
     [Function("UpdateExerciseById")]
     public async Task<IActionResult> UpdateExerciseById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "exercise/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "exercise/update")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int exerciseId))
-        {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
-        }
-
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+
         var exerciseRequest = JsonConvert.DeserializeObject<Exercise>(requestBody);
 
         if (exerciseRequest == null)
@@ -51,7 +47,7 @@ public class ExerciseTrigger
             return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _exerciseService.UpdateExerciseByIdAsync(exerciseId, exerciseRequest);
+        var result = await _exerciseService.UpdateExerciseByIdAsync(exerciseRequest.ExerciseId, exerciseRequest);
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to update exercise" });

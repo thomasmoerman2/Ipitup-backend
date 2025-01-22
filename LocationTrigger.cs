@@ -36,13 +36,8 @@ public class LocationTrigger
 
     [Function("UpdateLocationById")]
     public async Task<IActionResult> UpdateLocationById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "location/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "location/update")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int locationId))
-        {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
-        }
-
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var locationRequest = JsonConvert.DeserializeObject<Location>(requestBody);
 
@@ -51,7 +46,7 @@ public class LocationTrigger
             return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _locationService.UpdateLocationByIdAsync(locationId, locationRequest);
+        var result = await _locationService.UpdateLocationByIdAsync(locationRequest.LocationId, locationRequest);
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to update location" });

@@ -6,7 +6,7 @@ public class ActivityTrigger
     private readonly IUserService _userService;
 
     public ActivityTrigger(
-        ILogger<ActivityTrigger> logger, 
+        ILogger<ActivityTrigger> logger,
         IActivityService activityService,
         ILeaderboardService leaderboardService,
         IUserService userService)
@@ -58,13 +58,8 @@ public class ActivityTrigger
 
     [Function("UpdateActivityById")]
     public async Task<IActionResult> UpdateActivityById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "activity/{id}")] HttpRequest req, string id)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "activity/update")] HttpRequest req)
     {
-        if (!int.TryParse(id, out int activityId))
-        {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
-        }
-
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var activityRequest = JsonConvert.DeserializeObject<Activity>(requestBody);
 
@@ -73,7 +68,7 @@ public class ActivityTrigger
             return new BadRequestObjectResult(new { message = "Invalid JSON format" });
         }
 
-        var result = await _activityService.UpdateActivityByIdAsync(activityId, activityRequest);
+        var result = await _activityService.UpdateActivityByIdAsync(activityRequest.ActivityId, activityRequest);
         if (!result)
         {
             return new BadRequestObjectResult(new { message = "Failed to update activity" });

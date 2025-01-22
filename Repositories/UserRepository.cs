@@ -92,7 +92,8 @@ public class UserRepository : IUserRepository
                             UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
                             UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
                             Avatar = reader.GetString(reader.GetOrdinal("avatar")),
-                            BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate"))
+                            BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate")),
+                            IsAdmin = reader.GetBoolean(reader.GetOrdinal("isAdmin"))
                         };
                     }
                 }
@@ -187,7 +188,8 @@ public class UserRepository : IUserRepository
                         BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate")),
                         AccountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), reader.GetString(reader.GetOrdinal("accountStatus"))),
                         DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
-                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore"))
+                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore")),
+                        IsAdmin = reader.GetBoolean(reader.GetOrdinal("isAdmin"))
                     };
                 }
             }
@@ -218,7 +220,7 @@ public class UserRepository : IUserRepository
                         BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate")),
                         AccountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), reader.GetString(reader.GetOrdinal("accountStatus"))),
                         DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
-                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore"))
+                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore")),
                     };
                 }
             }

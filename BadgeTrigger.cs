@@ -136,6 +136,16 @@ public class BadgeTrigger
         }
 
         var badges = await _badgeService.GetBadgesByUserIdAsync(userIdParsed);
-        return new OkObjectResult(badges);
+        if (badges == null || !badges.Any())
+        {
+            return new NotFoundObjectResult(new { message = "No badges found for this user." });
+        }
+
+        return new OkObjectResult(new 
+        {
+            count = badges.Count(),  // Aantal badges toevoegen
+            badges = badges          // Lijst van badges
+        });
     }
+
 }

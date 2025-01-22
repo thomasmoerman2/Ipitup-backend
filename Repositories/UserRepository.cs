@@ -18,6 +18,8 @@ public interface IUserRepository
     Task<string> PasswordResetByUserIdAsync(int userId);
     Task<bool> UpdateUserTotalScoreAsync(int userId, int score);
     Task<bool> UpdateUserIsAdminAsync(int userId, bool isAdmin, string token);
+    Task<int> GetUserDailyStreakAsync(int userId);
+
 }
 
 public class UserRepository : IUserRepository
@@ -364,4 +366,24 @@ public class UserRepository : IUserRepository
         command.Parameters.AddWithValue("@userId", userId);
         return await command.ExecuteNonQueryAsync() > 0;
     }
+
+    public async Task<int> GetUserDailyStreakAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT dailyStreak FROM User WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@userId", userId);
+
+            var result = await command.ExecuteScalarAsync();
+
+            if (result != null && int.TryParse(result.ToString(), out int dailyStreak))
+            {
+                return dailyStreak;
+            }
+
+            return 0; // Indien niet gevonden, return 0 als default waarde
+        }
+    }
+
 }

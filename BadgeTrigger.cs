@@ -84,6 +84,31 @@ public class BadgeTrigger
         return new OkObjectResult(badges);
     }
 
+    [Function("GetAllBadgesWithUserProgress")]
+    public async Task<IActionResult> GetAllBadgesWithUserProgress(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "badge/all/{userId}")] HttpRequest req, string userId)
+    {
+        if (!int.TryParse(userId, out int userIdParsed))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid user ID format. It must be a number." });
+        }
+
+        var allBadges = await _badgeService.GetAllBadgesAsync();
+        var userBadges = await _badgeService.GetBadgesByUserIdAsync(userIdParsed);
+
+        var result = allBadges.Select(b => new
+        {
+            b.BadgeId,
+            b.BadgeName,
+            b.BadgeDescription,
+            b.BadgeAmount,
+            obtained = userBadges.Any(ub => ub.BadgeId == b.BadgeId) // Controleer of de gebruiker deze badge heeft
+        });
+
+        return new OkObjectResult(result);
+    }
+
+
     [Function("GetBadgeById")]
     public async Task<IActionResult> GetBadgeById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "badge/{id}")] HttpRequest req, string id)
@@ -125,6 +150,31 @@ public class BadgeTrigger
 
         return new OkObjectResult(new { message = "Badge assigned to user successfully" });
     }
+
+    [Function("RemoveBadgeFromUser")]
+    public async Task<IActionResult> RemoveBadgeFromUser(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "badge/user/remove")] HttpRequest req)
+    {
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var data = JsonConvert.DeserializeObject<dynamic>(requestBody);
+
+        if (data == null || data.badgeId == null || data.userId == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid request body" });
+        }
+
+        int badgeId = data.badgeId;
+        int userId = data.userId;
+
+        var result = await _badgeService.RemoveBadgeFromUserAsync(badgeId, userId);
+        if (!result)
+        {
+            return new BadRequestObjectResult(new { message = "Failed to remove badge from user" });
+        }
+
+        return new OkObjectResult(new { message = "Badge removed from user successfully" });
+    }
+
     
     [Function("GetBadgesByUserId")]
     public async Task<IActionResult> GetBadgesByUserId(

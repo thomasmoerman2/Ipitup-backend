@@ -14,6 +14,8 @@ public interface IUserService
     Task<string> PasswordResetByUserIdAsync(int userId);
     Task<bool> UpdateUserTotalScoreAsync(int userId, int score);
     Task<bool> UpdateUserIsAdminAsync(int userId, bool isAdmin, string token);
+    Task<int> GetUserDailyStreakAsync(int userId);
+
 }
 
 public class UserService : IUserService
@@ -89,4 +91,10 @@ public class UserService : IUserService
     {
         return await _userRepository.UpdateUserIsAdminAsync(userId, isAdmin, token);
     }
+
+    public async Task<int> GetUserDailyStreakAsync(int userId)
+    {
+        return await _userRepository.GetUserDailyStreakAsync(userId);
+    }
+
 }

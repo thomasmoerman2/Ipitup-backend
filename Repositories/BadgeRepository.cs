@@ -9,7 +9,9 @@ public interface IBadgeRepository
     Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId);
     Task<bool> AddBadgeToUserAsync(int badgeId, int userId);
     Task<bool> UpdateBadgeByIdAsync(int id, Badge badge);
-    Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount);  
+    Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount);
+    Task<bool> RemoveBadgeFromUserAsync(int badgeId, int userId);
+
 }
 
 public class BadgeRepository : IBadgeRepository
@@ -143,6 +145,21 @@ public class BadgeRepository : IBadgeRepository
             return result > 0;
         }
     }
+
+    public async Task<bool> RemoveBadgeFromUserAsync(int badgeId, int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("DELETE FROM BadgeUser WHERE badgeId = @badgeId AND userId = @userId", connection);
+            command.Parameters.AddWithValue("@badgeId", badgeId);
+            command.Parameters.AddWithValue("@userId", userId);
+
+            var result = await command.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+    }
+
 
     public async Task<bool> DeleteBadgeAsync(int id)
     {

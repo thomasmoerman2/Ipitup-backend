@@ -306,6 +306,25 @@ namespace Ipitup.Functions
         {
             public int UserId { get; set; }
         }
+
+        [Function("GetUserDailyStreak")]
+    public async Task<IActionResult> GetUserDailyStreak(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/dailystreak/{id}")] HttpRequest req, string id)
+    {
+        if (!int.TryParse(id, out int userId))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null)
+        {
+            return new NotFoundObjectResult(new { message = "User not found" });
+        }
+
+        return new OkObjectResult(new { dailyStreak = user.DailyStreak });
+    }
+
     }
 }
 

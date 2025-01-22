@@ -7,7 +7,7 @@ public interface ILeaderboardService
     Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId);
     Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
     Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore);
-    Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge);
+    Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge, string? sortType, int userId);
 
 
 
@@ -68,10 +68,11 @@ public class LeaderboardService : ILeaderboardService
         return await _leaderboardRepository.UpdateLeaderboardScoreAsync(userId, locationId, activityScore);
     }
 
-    public async Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge)
+    public async Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge, string? sortType, int userId)
     {
-        return await _leaderboardRepository.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge);
+        return await _leaderboardRepository.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge, sortType, userId);
     }
+
 
 
 

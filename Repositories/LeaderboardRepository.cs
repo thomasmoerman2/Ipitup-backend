@@ -151,9 +151,28 @@ public class LeaderboardRepository : ILeaderboardRepository
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
 
-        string query;
+        string query = @"
+        SELECT 
+            u.userId, 
+            u.userFirstname, 
+            u.userLastname, 
+            u.avatar, 
+            u.userEmail, 
+            u.totalScore, 
+            SUM(l.score) AS totalLocationScore, 
+            TIMESTAMPDIFF(YEAR, u.birthDate, CURDATE()) AS Age
+        FROM Leaderboard l
+        INNER JOIN User u ON l.userId = u.userId
+        WHERE 1=1";
+
         var parameters = new List<MySqlParameter>();
 
+        if (locationIds != null && locationIds.Any())
+        {
+            query += " AND l.locationId IN (" + string.Join(",", locationIds.Select(id => id.ToString())) + ")";
+        }
+
+        
         string ageCondition = "";
         if (minAge.HasValue)
         {

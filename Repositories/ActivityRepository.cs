@@ -9,6 +9,8 @@ public interface IActivityRepository
     Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
     Task<bool> DeleteActivityAsync(int id);
     Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
+    Task<int> GetActivityCountByUserIdAsync(int userId);
+
 }
 
 public class ActivityRepository : IActivityRepository
@@ -46,6 +48,19 @@ public class ActivityRepository : IActivityRepository
             throw new Exception("Error adding activity", ex);
         }
     }
+
+    public async Task<int> GetActivityCountByUserIdAsync(int userId)
+    {
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var command = new MySqlCommand("SELECT COUNT(*) FROM Activity WHERE userId = @userId", connection);
+        command.Parameters.AddWithValue("@userId", userId);
+        command.CommandTimeout = 30;  // Zet een tijdslimiet op de query
+
+        var result = await command.ExecuteScalarAsync();
+        return result != null ? Convert.ToInt32(result) : 0;
+    }
+
 
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {

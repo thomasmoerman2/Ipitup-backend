@@ -223,6 +223,26 @@ namespace Ipitup.Functions
             return new OkObjectResult(user);
         }
 
+        [Function("GetUserTotalScore")]
+        public async Task<IActionResult> GetUserTotalScore(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/totalscore/{id}")] HttpRequest req, string id)
+        {
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
+
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "User not found" });
+            }
+
+            return new OkObjectResult(new { totalScore = user.TotalScore });
+        }
+
+
+        
         [Function("PasswordResetByUserId")]
         public async Task<IActionResult> PasswordResetByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/reset-password")] HttpRequest req)

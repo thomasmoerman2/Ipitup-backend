@@ -9,6 +9,8 @@ public interface IActivityService
     Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
     Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
     Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
+    Task<int> GetActivityCountByUserIdAsync(int userId);
+
 }
 
 public class ActivityService : IActivityService
@@ -65,14 +67,20 @@ public class ActivityService : IActivityService
         return await _activityRepository.GetActivityByIdAsync(id);
     }
 
-    public async Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId)
-{
-    if (locationId <= 0)
+    public async Task<int> GetActivityCountByUserIdAsync(int userId)
     {
-        throw new ArgumentException("Invalid location ID");
+        return await _activityRepository.GetActivityCountByUserIdAsync(userId);
     }
-    return await _activityRepository.GetActivitiesByLocationIdAsync(locationId);
-}
+
+
+    public async Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId)
+    {
+        if (locationId <= 0)
+        {
+            throw new ArgumentException("Invalid location ID");
+        }
+        return await _activityRepository.GetActivitiesByLocationIdAsync(locationId);
+    }
 
     public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId)
     {

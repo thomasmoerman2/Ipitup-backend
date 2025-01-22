@@ -112,6 +112,7 @@ public class FollowRepository : IFollowRepository
         return following;
     }
 
+
     public async Task<bool> RejectFollowRequestAsync(int followerId, int followingId)
     {
         using var connection = new MySqlConnection(_connectionString);

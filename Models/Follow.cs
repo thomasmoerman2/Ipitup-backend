@@ -14,12 +14,6 @@ public class Follow
     public FollowStatus Status { get; set; } = FollowStatus.Pending;
 
     public DateTime FollowDate { get; set; } = DateTime.UtcNow;
-
-    [ForeignKey("FollowerId")]
-    public User? Follower { get; set; }
-
-    [ForeignKey("FollowingId")]
-    public User? Following { get; set; }
 }
 
 public enum FollowStatus

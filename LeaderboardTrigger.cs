@@ -88,10 +88,25 @@ public async Task<IActionResult> GetLeaderboardWithFilters(
         maxAge = max;
     }
 
-    if (!string.IsNullOrWhiteSpace(userIdQuery) && int.TryParse(userIdQuery, out int parsedUserId))
+    if (sortType == "volgend")
     {
-        userId = parsedUserId;
+        
+        if (!string.IsNullOrWhiteSpace(userIdQuery) && int.TryParse(userIdQuery, out int parsedUserId))
+        {
+            userId = parsedUserId;
+        }
+        else
+        {
+            return new BadRequestObjectResult(new { message = "Invalid userId provided for 'volgend' sortType." });
+        }
     }
+
+
+    _logger.LogInformation("Fetching leaderboard with sortType: {0}, userId: {1}", sortType, userId);
+    _logger.LogInformation("Received parameters: locationIds={0}, minAge={1}, maxAge={2}", 
+                            locationIds != null ? string.Join(",", locationIds) : "None", 
+                            minAge?.ToString() ?? "None", 
+                            maxAge?.ToString() ?? "None");
 
     var leaderboardEntries = await _leaderboardService.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge, sortType, userId);
 

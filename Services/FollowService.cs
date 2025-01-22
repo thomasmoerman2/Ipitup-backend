@@ -6,6 +6,8 @@ public interface IFollowService
     Task<bool> FollowUserAsync(Follow follow);
 
     Task<IEnumerable<Follow>> GetFollowersAsync(int userId);
+    Task<IEnumerable<Follow>> GetFollowingAsync(int userId);
+
 
     Task<bool> AcceptFollowRequestAsync(int followerId, int followingId);
 

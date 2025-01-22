@@ -34,6 +34,19 @@ public class FollowTrigger
         return new OkObjectResult(followers);
     }
 
+    [Function("GetFollowing")]
+    public async Task<IActionResult> GetFollowing(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "following/{userId}")] HttpRequest req, int userId)
+    {
+        var following = await _followService.GetFollowingAsync(userId);
+        if (following == null || !following.Any())
+        {
+            return new NotFoundObjectResult(new { message = "No following found for this user." });
+        }
+        return new OkObjectResult(following);
+    }
+
+
     [Function("AcceptFollowRequest")]
     public async Task<IActionResult> AcceptFollowRequest(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "follow/accept")] HttpRequest req)

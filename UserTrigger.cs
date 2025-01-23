@@ -377,7 +377,7 @@ namespace Ipitup.Functions
             }
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var avatarData = JsonConvert.DeserializeObject<Dictionary<string, string>>(requestBody);
-            
+
             if (avatarData == null || !avatarData.ContainsKey("avatar"))
             {
                 return new BadRequestObjectResult(new { message = "Invalid JSON format" });
@@ -423,9 +423,9 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User updated successfully" });
         }
-   [Function("GetUserAvatar")]
+        [Function("GetUserAvatar")]
         public async Task<IActionResult> GetUserAvatar(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/avatar/{id}")] HttpRequest req, string id)
+                 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/avatar/{id}")] HttpRequest req, string id)
         {
             if (!int.TryParse(id, out int userId))
             {
@@ -561,6 +561,55 @@ namespace Ipitup.Functions
                     });
                 }
             }
+        }
+
+
+        [Function("GetListOfFollowingByUserId")]
+        public async Task<IActionResult> GetListOfFollowingByUserId(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}/following")] HttpRequest req, string id)
+        {
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+            }
+            var token = authHeader.Substring("Bearer ".Length);
+            if (!await _userService.VerifyAuthTokenAsync(token))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+            }
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
+
+            var following = await _followService.GetFollowingAsync(userId);
+            return new OkObjectResult(following);
+
+        }
+
+
+        [Function("GetListOfFollowersByUserId")]
+        public async Task<IActionResult> GetListOfFollowersByUserId(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}/followers")] HttpRequest req, string id)
+        {
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+            }
+            var token = authHeader.Substring("Bearer ".Length);
+            if (!await _userService.VerifyAuthTokenAsync(token))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+            }
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
+
+            var followers = await _followService.GetFollowersAsync(userId);
+            return new OkObjectResult(followers);
         }
     }
 }

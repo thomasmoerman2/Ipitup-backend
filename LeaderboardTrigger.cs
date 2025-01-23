@@ -54,69 +54,88 @@ public class LeaderboardTrigger
     }
 
     [Function("GetLeaderboardWithFilters")]
-public async Task<IActionResult> GetLeaderboardWithFilters(
-    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/filter")] HttpRequest req)
-{
-    var locationIdQuery = req.Query["locationIds"].ToString();
-    var minAgeQuery = req.Query["minAge"];
-    var maxAgeQuery = req.Query["maxAge"];
-    var sortType = req.Query["sortType"].ToString();
-    var userIdQuery = req.Query["userId"];
-
-    List<int>? locationIds = null;
-    int? minAge = null;
-    int? maxAge = null;
-    int userId = 0;
-
-    if (!string.IsNullOrWhiteSpace(locationIdQuery))
+    public async Task<IActionResult> GetLeaderboardWithFilters(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/filter")] HttpRequest req)
     {
-        locationIds = locationIdQuery
-            .Split(',')
-            .Select(id => int.TryParse(id, out int locId) ? locId : (int?)null)
-            .Where(id => id.HasValue)
-            .Select(id => id.Value)
-            .ToList();
-    }
+        var locationIdQuery = req.Query["locationIds"].ToString();
+        var minAgeQuery = req.Query["minAge"];
+        var maxAgeQuery = req.Query["maxAge"];
+        var sortType = req.Query["sortType"].ToString();
+        var userIdQuery = req.Query["userId"];
 
-    if (!string.IsNullOrWhiteSpace(minAgeQuery) && int.TryParse(minAgeQuery, out int min))
-    {
-        minAge = min;
-    }
+        List<int>? locationIds = null;
+        int? minAge = null;
+        int? maxAge = null;
+        int userId = 0;
 
-    if (!string.IsNullOrWhiteSpace(maxAgeQuery) && int.TryParse(maxAgeQuery, out int max))
-    {
-        maxAge = max;
-    }
-
-    if (sortType == "volgend")
-    {
-        
-        if (!string.IsNullOrWhiteSpace(userIdQuery) && int.TryParse(userIdQuery, out int parsedUserId))
+        if (!string.IsNullOrWhiteSpace(locationIdQuery))
         {
-            userId = parsedUserId;
+            locationIds = locationIdQuery
+                .Split(',')
+                .Select(id => int.TryParse(id, out int locId) ? locId : (int?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id.Value)
+                .ToList();
         }
-        else
+
+        if (!string.IsNullOrWhiteSpace(minAgeQuery) && int.TryParse(minAgeQuery, out int min))
         {
-            return new BadRequestObjectResult(new { message = "Invalid userId provided for 'volgend' sortType." });
+            minAge = min;
         }
+
+        if (!string.IsNullOrWhiteSpace(maxAgeQuery) && int.TryParse(maxAgeQuery, out int max))
+        {
+            maxAge = max;
+        }
+
+        if (sortType == "volgend")
+        {
+            
+            if (!string.IsNullOrWhiteSpace(userIdQuery) && int.TryParse(userIdQuery, out int parsedUserId))
+            {
+                userId = parsedUserId;
+            }
+            else
+            {
+                return new BadRequestObjectResult(new { message = "Invalid userId provided for 'volgend' sortType." });
+            }
+        }
+
+
+        _logger.LogInformation("Fetching leaderboard with sortType: {0}, userId: {1}", sortType, userId);
+        _logger.LogInformation("Received parameters: locationIds={0}, minAge={1}, maxAge={2}", 
+                                locationIds != null ? string.Join(",", locationIds) : "None", 
+                                minAge?.ToString() ?? "None", 
+                                maxAge?.ToString() ?? "None");
+
+        var leaderboardEntries = await _leaderboardService.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge, sortType, userId);
+
+        if (!leaderboardEntries.Any())
+        {
+            return new NotFoundObjectResult(new { message = "No leaderboard entries found with given filters." });
+        }
+
+        return new OkObjectResult(leaderboardEntries);
     }
 
-
-    _logger.LogInformation("Fetching leaderboard with sortType: {0}, userId: {1}", sortType, userId);
-    _logger.LogInformation("Received parameters: locationIds={0}, minAge={1}, maxAge={2}", 
-                            locationIds != null ? string.Join(",", locationIds) : "None", 
-                            minAge?.ToString() ?? "None", 
-                            maxAge?.ToString() ?? "None");
-
-    var leaderboardEntries = await _leaderboardService.GetLeaderboardWithFiltersAsync(locationIds, minAge, maxAge, sortType, userId);
-
-    if (!leaderboardEntries.Any())
+    [Function("GetLeaderboardByUserId")]
+    public async Task<IActionResult> GetLeaderboardByUserId(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/byuserid/{userId}")] HttpRequest req, string userId)
     {
-        return new NotFoundObjectResult(new { message = "No leaderboard entries found with given filters." });
+        if (!int.TryParse(userId, out int userIdInt))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid user ID format." });
+        }
+
+        var leaderboardId = await _leaderboardService.GetLeaderboardIdByUserIdAsync(userIdInt);
+        if (leaderboardId == null)
+        {
+            return new NotFoundObjectResult(new { message = "Leaderboard entry not found for user." });
+        }
+
+        return new OkObjectResult(new { leaderboardId });
     }
 
-    return new OkObjectResult(leaderboardEntries);
-}
 
 
 

@@ -387,5 +387,6 @@ public class UserRepository : IUserRepository
             return 0; // Indien niet gevonden, return 0 als default waarde
         }
     }
+    
 
 }

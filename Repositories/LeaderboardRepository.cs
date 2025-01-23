@@ -8,6 +8,7 @@ public interface ILeaderboardRepository
     Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
     Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore);
     Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge, string? sortType, int userId);
+    Task<int?> GetLeaderboardIdByUserIdAsync(int userId);
 
 
 }
@@ -277,6 +278,17 @@ public class LeaderboardRepository : ILeaderboardRepository
         }
 
         return leaderboardEntries;
+    }
+
+    public async Task<int?> GetLeaderboardIdByUserIdAsync(int userId)
+    {
+        using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var command = new MySqlCommand("SELECT LeaderboardId FROM Leaderboard WHERE UserId = @userId", connection);
+        command.Parameters.AddWithValue("@userId", userId);
+
+        var result = await command.ExecuteScalarAsync();
+        return result != null ? Convert.ToInt32(result) : (int?)null;
     }
 
 

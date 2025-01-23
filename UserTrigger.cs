@@ -163,7 +163,24 @@ namespace Ipitup.Functions
                     {
                         return new BadRequestObjectResult(new { message = "Failed to create auth token" });
                     }
-                    return new OkObjectResult(new { message = "UserTrigger worked!", body = userRequest, authToken = authToken.Token });
+                    return new OkObjectResult(new
+                    {
+                        message = "UserTrigger worked!",
+                        body = new
+                        {
+                            userId = user.UserId,
+                            firstname = user.UserFirstname,
+                            lastname = user.UserLastname,
+                            email = user.UserEmail,
+                            avatar = user.Avatar,
+                            birthDate = user.BirthDate,
+                            accountStatus = user.AccountStatus,
+                            dailyStreak = user.DailyStreak,
+                            totalScore = user.TotalScore,
+                            isAdmin = user.IsAdmin
+                        },
+                        authToken = authToken.Token
+                    });
                 }
                 else
                 {
@@ -309,22 +326,22 @@ namespace Ipitup.Functions
         }
 
         [Function("GetUserDailyStreak")]
-    public async Task<IActionResult> GetUserDailyStreak(
+        public async Task<IActionResult> GetUserDailyStreak(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/dailystreak/{id}")] HttpRequest req, string id)
-    {
-        if (!int.TryParse(id, out int userId))
         {
-            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
-        }
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
 
-        var user = await _userService.GetUserByIdAsync(userId);
-        if (user == null)
-        {
-            return new NotFoundObjectResult(new { message = "User not found" });
-        }
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return new NotFoundObjectResult(new { message = "User not found" });
+            }
 
-        return new OkObjectResult(new { dailyStreak = user.DailyStreak });
-    }
+            return new OkObjectResult(new { dailyStreak = user.DailyStreak });
+        }
 
     }
 }

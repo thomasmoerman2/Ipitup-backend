@@ -579,8 +579,21 @@ namespace Ipitup.Functions
             }
 
             var following = await _followService.GetFollowingAsync(userId);
-            return new OkObjectResult(following);
+            var formattedFollowing = new List<object>();
 
+            foreach (var follow in following)
+            {
+                var user = await _userService.GetUserByIdAsync(follow.FollowingId);
+                formattedFollowing.Add(new
+                {
+                    id = user.UserId,
+                    firstname = user.UserFirstname,
+                    lastname = user.UserLastname,
+                    avatar = user.Avatar
+                });
+            }
+
+            return new OkObjectResult(formattedFollowing);
         }
 
 
@@ -604,7 +617,21 @@ namespace Ipitup.Functions
             }
 
             var followers = await _followService.GetFollowersAsync(userId);
-            return new OkObjectResult(followers);
+            var formattedFollowers = new List<object>();
+
+            foreach (var follower in followers)
+            {
+                var user = await _userService.GetUserByIdAsync(follower.FollowerId);
+                formattedFollowers.Add(new
+                {
+                    id = user.UserId,
+                    firstname = user.UserFirstname,
+                    lastname = user.UserLastname,
+                    avatar = user.Avatar
+                });
+            }
+
+            return new OkObjectResult(formattedFollowers);
         }
     }
 }

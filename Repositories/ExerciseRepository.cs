@@ -9,6 +9,7 @@ public interface IExerciseRepository
     Task<bool> DeleteExerciseAsync(int id);
     Task<bool> UpdateExerciseByIdAsync(int id, Exercise exercise);
     Task<List<Exercise>> GetAllExercisesByCategoriesAsync(List<string> categories);
+    Task<List<Exercise>> GetExercisesByIdsAsync(List<int?> ids);
 }
 
 public class ExerciseRepository : IExerciseRepository
@@ -198,6 +199,34 @@ public class ExerciseRepository : IExerciseRepository
                         ExerciseInstructions = reader.IsDBNull(reader.GetOrdinal("exerciseInstructions")) ? null : reader.GetString(reader.GetOrdinal("exerciseInstructions")),
                         ExerciseTime = reader.GetInt32(reader.GetOrdinal("exerciseTime"))
                     });
+                }
+            }
+        }
+        return exercises;
+    }
+
+    public async Task<List<Exercise>> GetExercisesByIdsAsync(List<int?> ids)
+    {
+        var exercises = new List<Exercise>();
+        foreach (var id in ids)
+        {
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var command = new MySqlCommand("SELECT * FROM Exercise WHERE exerciseId = @id", connection);
+                command.Parameters.AddWithValue("@id", id);
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        exercises.Add(new Exercise
+                        {
+                            ExerciseName = reader.GetString(reader.GetOrdinal("exerciseName")),
+                            ExerciseType = reader.GetString(reader.GetOrdinal("exerciseType")),
+                            ExerciseTime = reader.GetInt32(reader.GetOrdinal("exerciseTime")),
+                            ExerciseId = reader.GetInt32(reader.GetOrdinal("exerciseId"))
+                        });
+                    }
                 }
             }
         }

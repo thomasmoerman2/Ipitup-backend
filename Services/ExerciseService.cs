@@ -9,6 +9,7 @@ public interface IExerciseService
     Task<bool> DeleteExerciseAsync(int id);
     Task<bool> UpdateExerciseByIdAsync(int id, Exercise exercise);
     Task<List<Exercise>> GetAllExercisesByCategoriesAsync(List<string> categories);
+    Task<List<Exercise>> GetExercisesByIdsAsync(List<int?> ids);
 }
 
 public class ExerciseService : IExerciseService
@@ -60,5 +61,10 @@ public class ExerciseService : IExerciseService
     public async Task<List<Exercise>> GetAllExercisesByCategoriesAsync(List<string> categories)
     {
         return await _exerciseRepository.GetAllExercisesByCategoriesAsync(categories);
+    }
+
+    public async Task<List<Exercise>> GetExercisesByIdsAsync(List<int?> ids)
+    {
+        return await _exerciseRepository.GetExercisesByIdsAsync(ids);
     }
 }

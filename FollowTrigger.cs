@@ -4,11 +4,12 @@ public class FollowTrigger
 {
     private readonly ILogger<FollowTrigger> _logger;
     private readonly IFollowService _followService;
-
-    public FollowTrigger(ILogger<FollowTrigger> logger, IFollowService followService)
+    private readonly IUserService _userService;
+    public FollowTrigger(ILogger<FollowTrigger> logger, IFollowService followService, IUserService userService)
     {
         _logger = logger;
         _followService = followService;
+        _userService = userService;
     }
 
     [Function("FollowUser")]
@@ -64,7 +65,7 @@ public class FollowTrigger
 
     [Function("UnfollowUser")]
     public async Task<IActionResult> UnfollowUser(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "follow/unfollow")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "unfollow")] HttpRequest req)
     {
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var follow = JsonConvert.DeserializeObject<Follow>(requestBody);
@@ -107,5 +108,27 @@ public class FollowTrigger
         return result ? new OkObjectResult(new { message = "Follower removed successfully" }) : new BadRequestObjectResult(new { message = "Failed to remove follower" });
     }
 
+    [Function("CheckIfUserIsFollowing")]
+    public async Task<IActionResult> CheckIfUserIsFollowing(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "follow/check")] HttpRequest req)
+    {
+        var authHeader = req.Headers["Authorization"].FirstOrDefault();
+        if (authHeader == null || !authHeader.StartsWith("Bearer "))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid token" });
+        }
+        var token = authHeader.Substring("Bearer ".Length);
+        var userIdFromToken = await _userService.VerifyAuthTokenAsync(token);
+
+        var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+        var follow = JsonConvert.DeserializeObject<Follow>(requestBody);
+        if (follow == null)
+        {
+            return new BadRequestObjectResult(new { message = "Invalid request data" });
+        }
+
+        var result = await _followService.CheckIfUserIsFollowingAsync(follow.FollowerId, follow.FollowingId);
+        return new OkObjectResult(new { isFollowing = result });
+    }
 
 }

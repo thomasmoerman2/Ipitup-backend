@@ -490,13 +490,14 @@ namespace Ipitup.Functions
             var latestAchievements = achievements.Take(8).ToList();
 
 
-            var exercisesObject = latestExercises.Select(e => new
+            var exercisesObject = latestActivities.Select(a => new
             {
-                name = e.ExerciseName,
-                type = e.ExerciseType,
-                time = e.ExerciseTime,
-                score = latestActivities.FirstOrDefault(a => a.ExerciseId == e.ExerciseId)?.ActivityScore ?? 0
+                name = exercises.FirstOrDefault(e => e.ExerciseId == a.ExerciseId)?.ExerciseName ?? "Unknown",
+                type = exercises.FirstOrDefault(e => e.ExerciseId == a.ExerciseId)?.ExerciseType ?? "Unknown",
+                time = exercises.FirstOrDefault(e => e.ExerciseId == a.ExerciseId)?.ExerciseTime ?? 0,
+                score = a.ActivityScore
             }).ToList();
+
 
             var achievementsObject = latestAchievements.Select(a => new
             {

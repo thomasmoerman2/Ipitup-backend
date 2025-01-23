@@ -21,8 +21,8 @@ public interface IUserRepository
     Task<int> GetUserDailyStreakAsync(int userId);
     Task<bool> UpdateUserAvatarAsync(int userId, string avatar);
     Task<bool> UpdateUserAsync(int userId, User user);
+    Task<int> GetUserIdFromTokenAsync(string token);
     Task<string?> GetUserAvatarAsync(int userId);
-
 }
 
 public class UserRepository : IUserRepository
@@ -206,7 +206,6 @@ public class UserRepository : IUserRepository
     {
         try
         {
-            Console.WriteLine("GetUserByFullNameAsync ->", $"Firstname: {firstname}, Lastname: {lastname}");
             using (var connection = new MySqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -218,14 +217,14 @@ public class UserRepository : IUserRepository
 
                 if (lastname == "")
                 {
-                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname = @firstname AND accountStatus = 'Public'", connection);
-                    command.Parameters.AddWithValue("@firstname", firstname);
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND accountStatus = 'Public'", connection);
+                    command.Parameters.AddWithValue("@firstname", "%" + firstname + "%");
                 }
                 else
                 {
-                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname = @firstname AND userLastname = @lastname AND accountStatus = 'Public'", connection);
-                    command.Parameters.AddWithValue("@firstname", firstname);
-                    command.Parameters.AddWithValue("@lastname", lastname);
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND userLastname LIKE @lastname AND accountStatus = 'Public'", connection);
+                    command.Parameters.AddWithValue("@firstname", "%" + firstname + "%");
+                    command.Parameters.AddWithValue("@lastname", "%" + lastname + "%");
                 }
 
                 using (var reader = await command.ExecuteReaderAsync())
@@ -239,8 +238,6 @@ public class UserRepository : IUserRepository
                             UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
                             UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
                             Avatar = reader.GetString(reader.GetOrdinal("avatar")),
-                            DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
-                            TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore")),
                         });
                     }
                     return users;
@@ -456,4 +453,44 @@ public class UserRepository : IUserRepository
         }
     }
 
+    public async Task<int> GetUserIdFromTokenAsync(string token)
+    {
+        Console.WriteLine("\n=== GetUserIdFromTokenAsync Start ===");
+        Console.WriteLine($"Attempting to get userId for token: {token}");
+
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            try
+            {
+                await connection.OpenAsync();
+                Console.WriteLine("Database connection opened successfully");
+
+                var command = new MySqlCommand("SELECT userId FROM AuthToken WHERE token = @token", connection);
+                command.Parameters.AddWithValue("@token", token);
+                Console.WriteLine("Executing SQL query to fetch userId");
+
+                var result = await command.ExecuteScalarAsync();
+                Console.WriteLine($"Query result: {result ?? "null"}");
+                if (result != null && int.TryParse(result.ToString(), out int userId))
+                {
+                    Console.WriteLine($"Parse success: true, UserId: {userId}");
+                    Console.WriteLine("=== GetUserIdFromTokenAsync End ===\n");
+                    return userId;
+                }
+                else
+                {
+                    Console.WriteLine("Parse success: false, UserId: 0");
+                    Console.WriteLine("=== GetUserIdFromTokenAsync End ===\n");
+                    return 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetUserIdFromTokenAsync: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.WriteLine("=== GetUserIdFromTokenAsync End with Error ===\n");
+                return 0;
+            }
+        }
+    }
 }

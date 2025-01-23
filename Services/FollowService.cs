@@ -16,7 +16,7 @@ public interface IFollowService
     Task<bool> RejectFollowRequestAsync(int followerId, int followingId);
     Task<bool> RemoveFollowerAsync(int followerId, int followingId);
 
-
+    Task<Follow> CheckIfUserIsFollowingAsync(int followerId, int followingId);
 }
 
 public class FollowService : IFollowService
@@ -64,4 +64,8 @@ public class FollowService : IFollowService
         return await _followRepository.RemoveFollowerAsync(followerId, followingId);
     }
 
+    public async Task<Follow> CheckIfUserIsFollowingAsync(int followerId, int followingId)
+    {
+        return await _followRepository.CheckIfUserIsFollowingAsync(followerId, followingId);
+    }
 }

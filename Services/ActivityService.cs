@@ -10,7 +10,6 @@ public interface IActivityService
     Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
     Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
     Task<int> GetActivityCountByUserIdAsync(int userId);
-
 }
 
 public class ActivityService : IActivityService

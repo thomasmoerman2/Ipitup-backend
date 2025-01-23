@@ -5,10 +5,12 @@ public class Follow
 {
     [Key]
     [Column(Order = 0)]
+    [ForeignKey("followerId")]
     public int FollowerId { get; set; }
 
     [Key]
     [Column(Order = 1)]
+    [ForeignKey("followingId")]
     public int FollowingId { get; set; }
 
     public FollowStatus Status { get; set; } = FollowStatus.Pending;

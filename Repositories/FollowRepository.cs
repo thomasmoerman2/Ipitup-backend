@@ -9,7 +9,7 @@ public interface IFollowRepository
     Task<IEnumerable<Follow>> GetFollowersAsync(int userId);
     Task<IEnumerable<Follow>> GetFollowingAsync(int userId);
     Task<bool> RejectFollowRequestAsync(int followerId, int followingId);
-
+    Task<Follow> CheckIfUserIsFollowingAsync(int followerId, int followingId);
 }
 
 public class FollowRepository : IFollowRepository
@@ -26,9 +26,7 @@ public class FollowRepository : IFollowRepository
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand(@"
-            INSERT INTO Follow (followerId, followingId, status, followDate)
-            VALUES (@followerId, @followingId, @status, @followDate)", connection);
+        var command = new MySqlCommand("INSERT INTO Follow (followerId, followingId, status, followDate) VALUES (@followerId, @followingId, @status, @followDate)", connection);
 
         command.Parameters.AddWithValue("@followerId", follow.FollowerId);
         command.Parameters.AddWithValue("@followingId", follow.FollowingId);
@@ -43,10 +41,7 @@ public class FollowRepository : IFollowRepository
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand(@"
-            UPDATE Follow 
-            SET status = 'Accepted' 
-            WHERE followerId = @followerId AND followingId = @followingId", connection);
+        var command = new MySqlCommand("UPDATE Follow SET status = 'Accepted' WHERE followerId = @followerId AND followingId = @followingId", connection);
 
         command.Parameters.AddWithValue("@followerId", followerId);
         command.Parameters.AddWithValue("@followingId", followingId);
@@ -58,9 +53,7 @@ public class FollowRepository : IFollowRepository
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand(@"
-            DELETE FROM Follow 
-            WHERE followerId = @followerId AND followingId = @followingId", connection);
+        var command = new MySqlCommand("DELETE FROM Follow WHERE followerId = @followerId AND followingId = @followingId", connection);
 
         command.Parameters.AddWithValue("@followerId", followerId);
         command.Parameters.AddWithValue("@followingId", followingId);
@@ -80,7 +73,7 @@ public class FollowRepository : IFollowRepository
         while (await reader.ReadAsync())
         {
             followers.Add(new Follow
-            {   
+            {
                 FollowerId = reader.GetInt32(reader.GetOrdinal("FollowerId")),
                 FollowingId = reader.GetInt32(reader.GetOrdinal("FollowingId")),
                 Status = Enum.Parse<FollowStatus>(reader.GetString(reader.GetOrdinal("Status"))),
@@ -117,10 +110,7 @@ public class FollowRepository : IFollowRepository
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand(@"
-            UPDATE Follow 
-            SET status = 'Rejected' 
-            WHERE followerId = @followerId AND followingId = @followingId", connection);
+        var command = new MySqlCommand("UPDATE Follow SET status = 'Rejected' WHERE followerId = @followerId AND followingId = @followingId", connection);
 
         command.Parameters.AddWithValue("@followerId", followerId);
         command.Parameters.AddWithValue("@followingId", followingId);
@@ -132,9 +122,7 @@ public class FollowRepository : IFollowRepository
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand(@"
-            DELETE FROM Follow 
-            WHERE followerId = @followerId AND followingId = @followingId", connection);
+        var command = new MySqlCommand("DELETE FROM Follow WHERE followerId = @followerId AND followingId = @followingId", connection);
 
         command.Parameters.AddWithValue("@followerId", followerId);
         command.Parameters.AddWithValue("@followingId", followingId);
@@ -142,4 +130,29 @@ public class FollowRepository : IFollowRepository
         return await command.ExecuteNonQueryAsync() > 0;
     }
 
+    public async Task<Follow> CheckIfUserIsFollowingAsync(int followerId, int followingId)
+    {
+        try
+        {
+            Console.WriteLine($"CheckIfUserIsFollowingAsync -> FollowerId: {followerId}, FollowingId: {followingId}");
+            using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT status FROM Follow WHERE followerId = @followerId AND followingId = @followingId", connection);
+            command.Parameters.AddWithValue("@followerId", followerId);
+            command.Parameters.AddWithValue("@followingId", followingId);
+            var result = await command.ExecuteScalarAsync();
+            return new Follow
+            {
+                FollowerId = followerId,
+                FollowingId = followingId,
+                Status = Enum.Parse<FollowStatus>(result.ToString()),
+                FollowDate = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"CheckIfUserIsFollowingAsync -> {ex.Message}");
+            return null;
+        }
+    }
 }

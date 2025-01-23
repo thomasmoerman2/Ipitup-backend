@@ -8,6 +8,7 @@ public interface ILeaderboardService
     Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
     Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore);
     Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge, string? sortType, int userId);
+    Task<int?> GetLeaderboardIdByUserIdAsync(int userId);
 
 
 
@@ -96,6 +97,15 @@ public class LeaderboardService : ILeaderboardService
         var topUserIds = topUsers.Select(u => u.UserId).ToList();
 
         return users.Where(u => topUserIds.Contains(u.UserId));
+    }
+
+    public async Task<int?> GetLeaderboardIdByUserIdAsync(int userId)
+    {
+        if (userId <= 0)
+        {
+            throw new ArgumentException("Invalid userId provided.");
+        }
+        return await _leaderboardRepository.GetLeaderboardIdByUserIdAsync(userId);
     }
 
 

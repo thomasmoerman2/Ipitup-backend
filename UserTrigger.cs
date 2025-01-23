@@ -222,15 +222,12 @@ namespace Ipitup.Functions
 
         [Function("GetUserByFullName")]
         public async Task<IActionResult> GetUserByFullName(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/fullname")] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/fullname")] HttpRequest req)
         {
-            string? firstname = req.Query["firstname"];
-            string? lastname = req.Query["lastname"];
+            string firstname = req.Query["firstname"].ToString() ?? string.Empty;
+            string lastname = req.Query["lastname"].ToString() ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(firstname) || string.IsNullOrWhiteSpace(lastname))
-            {
-                return new BadRequestObjectResult(new { message = "Firstname and Lastname are required" });
-            }
+            _logger.LogInformation($"Firstname: {firstname}, Lastname: {lastname}");
 
             var user = await _userService.GetUserByFullNameAsync(firstname, lastname);
             if (user == null)
@@ -238,7 +235,20 @@ namespace Ipitup.Functions
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
 
-            return new OkObjectResult(user);
+            return new OkObjectResult(new
+            {
+                status = 200,
+                message = "User found",
+                body = user.Select(u => new
+                {
+                    id = u.UserId,
+                    firstname = u.UserFirstname,
+                    lastname = u.UserLastname,
+                    avatar = u.Avatar,
+                    dailyStreak = u.DailyStreak,
+                    totalScore = u.TotalScore
+                })
+            });
         }
 
         [Function("GetUserTotalScore")]
@@ -343,6 +353,69 @@ namespace Ipitup.Functions
             return new OkObjectResult(new { dailyStreak = user.DailyStreak });
         }
 
+        [Function("UpdateUserAvatar")]
+        public async Task<IActionResult> UpdateUserAvatar(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/avatar/{id}")] HttpRequest req, string id)
+        {
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+            }
+            var token = authHeader.Substring("Bearer ".Length);
+            if (!await _userService.VerifyAuthTokenAsync(token))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+            }
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var userRequest = JsonConvert.DeserializeObject<User>(requestBody);
+            if (userRequest == null)
+            {
+                return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+            }
+            var result = await _userService.UpdateUserAvatarAsync(userId, userRequest.Avatar);
+            if (!result)
+            {
+                return new BadRequestObjectResult(new { message = "Failed to update user avatar" });
+            }
+            return new OkObjectResult(new { message = "User avatar updated successfully" });
+        }
+
+        [Function("UpdateUser")]
+        public async Task<IActionResult> UpdateUser(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/{id}")] HttpRequest req, string id)
+        {
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+            }
+            var token = authHeader.Substring("Bearer ".Length);
+            if (!await _userService.VerifyAuthTokenAsync(token))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+            }
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var userRequest = JsonConvert.DeserializeObject<User>(requestBody);
+            if (userRequest == null)
+            {
+                return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+            }
+            var result = await _userService.UpdateUserAsync(userId, userRequest);
+            if (!result)
+            {
+                return new BadRequestObjectResult(new { message = "Failed to update user" });
+            }
+            return new OkObjectResult(new { message = "User updated successfully" });
+        }
     }
 }
 

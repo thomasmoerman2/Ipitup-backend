@@ -7,7 +7,7 @@ public interface IUserService
     Task<User> AddUser(User user);
     Task<User?> GetUserByIdAsync(int userId);
     Task<IEnumerable<User>> GetAllUsersAsync();
-    Task<User?> GetUserByFullNameAsync(string firstname, string lastname);
+    Task<List<User>> GetUserByFullNameAsync(string firstname, string lastname);
     Task<AuthToken?> CreateAuthTokenAsync(int userId);
     Task<bool> VerifyAuthTokenAsync(string token);
     Task<bool> InvalidateAuthTokenAsync(string token);
@@ -15,7 +15,8 @@ public interface IUserService
     Task<bool> UpdateUserTotalScoreAsync(int userId, int score);
     Task<bool> UpdateUserIsAdminAsync(int userId, bool isAdmin, string token);
     Task<int> GetUserDailyStreakAsync(int userId);
-
+    Task<bool> UpdateUserAvatarAsync(int userId, string avatar);
+    Task<bool> UpdateUserAsync(int userId, User user);
 }
 
 public class UserService : IUserService
@@ -56,7 +57,7 @@ public class UserService : IUserService
         return await _userRepository.GetAllUsersAsync();
     }
 
-    public async Task<User?> GetUserByFullNameAsync(string firstname, string lastname)
+    public async Task<List<User>> GetUserByFullNameAsync(string firstname, string lastname)
     {
         return await _userRepository.GetUserByFullNameAsync(firstname, lastname);
     }
@@ -95,6 +96,16 @@ public class UserService : IUserService
     public async Task<int> GetUserDailyStreakAsync(int userId)
     {
         return await _userRepository.GetUserDailyStreakAsync(userId);
+    }
+
+    public async Task<bool> UpdateUserAvatarAsync(int userId, string avatar)
+    {
+        return await _userRepository.UpdateUserAvatarAsync(userId, avatar);
+    }
+
+    public async Task<bool> UpdateUserAsync(int userId, User user)
+    {
+        return await _userRepository.UpdateUserAsync(userId, user);
     }
 
 }

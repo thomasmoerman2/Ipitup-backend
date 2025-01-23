@@ -10,7 +10,7 @@ public interface IUserRepository
     Task<User> AddUser(User user);
     Task<User?> GetUserByIdAsync(int userId);
     Task<IEnumerable<User>> GetAllUsersAsync();
-    Task<User?> GetUserByFullNameAsync(string firstname, string lastname);
+    Task<List<User>> GetUserByFullNameAsync(string firstname, string lastname);
     Task<AuthToken?> CreateAuthTokenAsync(int userId);
     Task<AuthToken?> GetAuthTokenAsync(string token);
     Task<bool> InvalidateAuthTokenAsync(string token);
@@ -19,7 +19,8 @@ public interface IUserRepository
     Task<bool> UpdateUserTotalScoreAsync(int userId, int score);
     Task<bool> UpdateUserIsAdminAsync(int userId, bool isAdmin, string token);
     Task<int> GetUserDailyStreakAsync(int userId);
-
+    Task<bool> UpdateUserAvatarAsync(int userId, string avatar);
+    Task<bool> UpdateUserAsync(int userId, User user);
 }
 
 public class UserRepository : IUserRepository
@@ -199,33 +200,55 @@ public class UserRepository : IUserRepository
         return null;
     }
 
-    public async Task<User?> GetUserByFullNameAsync(string firstname, string lastname)
+    public async Task<List<User>> GetUserByFullNameAsync(string firstname, string lastname)
     {
-        using (var connection = new MySqlConnection(_connectionString))
+        try
         {
-            await connection.OpenAsync();
-            var command = new MySqlCommand("SELECT * FROM User WHERE userFirstname = @firstname AND userLastname = @lastname", connection);
-            command.Parameters.AddWithValue("@firstname", firstname);
-            command.Parameters.AddWithValue("@lastname", lastname);
-
-            using (var reader = await command.ExecuteReaderAsync())
+            Console.WriteLine("GetUserByFullNameAsync ->", $"Firstname: {firstname}, Lastname: {lastname}");
+            using (var connection = new MySqlConnection(_connectionString))
             {
-                if (await reader.ReadAsync())
+                await connection.OpenAsync();
+                if (firstname == null || lastname == null)
                 {
-                    return new User
+                    return null;
+                }
+                var command = new MySqlCommand();
+
+                if (lastname == "")
+                {
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname = @firstname AND accountStatus = 'Public'", connection);
+                    command.Parameters.AddWithValue("@firstname", firstname);
+                }
+                else
+                {
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname = @firstname AND userLastname = @lastname AND accountStatus = 'Public'", connection);
+                    command.Parameters.AddWithValue("@firstname", firstname);
+                    command.Parameters.AddWithValue("@lastname", lastname);
+                }
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    var users = new List<User>();
+                    while (await reader.ReadAsync())
                     {
-                        UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                        UserEmail = reader.GetString(reader.GetOrdinal("userEmail")),
-                        UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
-                        UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
-                        Avatar = reader.GetString(reader.GetOrdinal("avatar")),
-                        BirthDate = reader.GetDateTime(reader.GetOrdinal("birthDate")),
-                        AccountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), reader.GetString(reader.GetOrdinal("accountStatus"))),
-                        DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
-                        TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore")),
-                    };
+                        users.Add(new User
+                        {
+                            UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                            UserFirstname = reader.GetString(reader.GetOrdinal("userFirstname")),
+                            UserLastname = reader.GetString(reader.GetOrdinal("userLastname")),
+                            Avatar = reader.GetString(reader.GetOrdinal("avatar")),
+                            DailyStreak = reader.GetInt32(reader.GetOrdinal("dailyStreak")),
+                            TotalScore = reader.GetInt32(reader.GetOrdinal("totalScore")),
+                        });
+                    }
+                    return users;
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving user by full name: {ex.Message}");
+            throw;
         }
         return null;
     }
@@ -242,8 +265,7 @@ public class UserRepository : IUserRepository
             var expiresAt = createdAt.AddDays(7); // Token expires in 7 days
 
             var command = new MySqlCommand(
-                @"INSERT INTO AuthToken (userId, token, createdAt, expiresAt, isValid) 
-                VALUES (@userId, @token, @createdAt, @expiresAt, true)",
+                "INSERT INTO AuthToken (userId, token, createdAt, expiresAt, isValid) VALUES (@userId, @token, @createdAt, @expiresAt, true)",
                 connection);
 
             command.Parameters.AddWithValue("@userId", userId);
@@ -385,6 +407,33 @@ public class UserRepository : IUserRepository
             }
 
             return 0; // Indien niet gevonden, return 0 als default waarde
+        }
+    }
+
+    public async Task<bool> UpdateUserAvatarAsync(int userId, string avatar)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE User SET avatar = @avatar WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@avatar", avatar);
+            command.Parameters.AddWithValue("@userId", userId);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
+    public async Task<bool> UpdateUserAsync(int userId, User user)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE `User` SET userFirstname=@userFirstname,userLastname=@userLastname, userEmail=@userEmail, birthDate=@birthDate WHERE userId=@userId", connection);
+            command.Parameters.AddWithValue("@userFirstname", user.UserFirstname);
+            command.Parameters.AddWithValue("@userLastname", user.UserLastname);
+            command.Parameters.AddWithValue("@userEmail", user.UserEmail);
+            command.Parameters.AddWithValue("@birthDate", user.BirthDate);
+            command.Parameters.AddWithValue("@userId", userId);
+            return await command.ExecuteNonQueryAsync() > 0;
         }
     }
 

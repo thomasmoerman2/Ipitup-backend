@@ -29,22 +29,48 @@ public class FollowTrigger
 
     [Function("GetFollowers")]
     public async Task<IActionResult> GetFollowers(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "followers/{userId}")] HttpRequest req, int userId)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "followers/{userId}")] HttpRequest req, string userId)
     {
-        var followers = await _followService.GetFollowersAsync(userId);
-        return new OkObjectResult(followers);
+        var authHeader = req.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+        {
+            return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+        }
+        var token = authHeader.Substring("Bearer ".Length);
+        if (!await _userService.VerifyAuthTokenAsync(token))
+        {
+            return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+        }
+        if (!int.TryParse(userId, out int userIdInt))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+        var followers = await _followService.GetFollowersAsync(userIdInt);
+
+        return new OkObjectResult(new { followers = followers });
     }
 
     [Function("GetFollowing")]
     public async Task<IActionResult> GetFollowing(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "following/{userId}")] HttpRequest req, int userId)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "following/{userId}")] HttpRequest req, string userId)
     {
-        var following = await _followService.GetFollowingAsync(userId);
-        if (following == null || !following.Any())
+        var authHeader = req.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
         {
-            return new NotFoundObjectResult(new { message = "No following found for this user." });
+            return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
         }
-        return new OkObjectResult(following);
+        var token = authHeader.Substring("Bearer ".Length);
+        if (!await _userService.VerifyAuthTokenAsync(token))
+        {
+            return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+        }
+        if (!int.TryParse(userId, out int userIdInt))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+        }
+        var following = await _followService.GetFollowingAsync(userIdInt);
+
+        return new OkObjectResult(new { following = following });
     }
 
 

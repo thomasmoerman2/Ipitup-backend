@@ -391,7 +391,6 @@ namespace Ipitup.Functions
             return new OkObjectResult(new { message = "User avatar updated successfully" });
         }
 
-
         [Function("UpdateUser")]
         public async Task<IActionResult> UpdateUser(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/{id}")] HttpRequest req, string id)
@@ -423,6 +422,7 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User updated successfully" });
         }
+
         [Function("GetUserAvatar")]
         public async Task<IActionResult> GetUserAvatar(
                  [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/avatar/{id}")] HttpRequest req, string id)
@@ -433,11 +433,6 @@ namespace Ipitup.Functions
             }
 
             var avatar = await _userService.GetUserAvatarAsync(userId);
-            if (string.IsNullOrEmpty(avatar))
-            {
-                return new NotFoundObjectResult(new { message = "Avatar not found" });
-            }
-
             return new OkObjectResult(new { avatar });
         }
 

@@ -372,18 +372,21 @@ namespace Ipitup.Functions
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var userRequest = JsonConvert.DeserializeObject<User>(requestBody);
-            if (userRequest == null)
+            var avatarData = JsonConvert.DeserializeObject<Dictionary<string, string>>(requestBody);
+            
+            if (avatarData == null || !avatarData.ContainsKey("avatar"))
             {
                 return new BadRequestObjectResult(new { message = "Invalid JSON format" });
             }
-            var result = await _userService.UpdateUserAvatarAsync(userId, userRequest.Avatar);
+
+            var result = await _userService.UpdateUserAvatarAsync(userId, avatarData["avatar"]);
             if (!result)
             {
                 return new BadRequestObjectResult(new { message = "Failed to update user avatar" });
             }
             return new OkObjectResult(new { message = "User avatar updated successfully" });
         }
+
 
         [Function("UpdateUser")]
         public async Task<IActionResult> UpdateUser(
@@ -416,6 +419,26 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User updated successfully" });
         }
+
+        [Function("GetUserAvatar")]
+        public async Task<IActionResult> GetUserAvatar(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/avatar/{id}")] HttpRequest req, string id)
+        {
+            if (!int.TryParse(id, out int userId))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+            }
+
+            var avatar = await _userService.GetUserAvatarAsync(userId);
+            if (string.IsNullOrEmpty(avatar))
+            {
+                return new NotFoundObjectResult(new { message = "Avatar not found" });
+            }
+
+            return new OkObjectResult(new { avatar });
+        }
+
+
     }
 }
 

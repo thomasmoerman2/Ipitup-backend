@@ -15,8 +15,10 @@ public interface IUserService
     Task<bool> UpdateUserTotalScoreAsync(int userId, int score);
     Task<bool> UpdateUserIsAdminAsync(int userId, bool isAdmin, string token);
     Task<int> GetUserDailyStreakAsync(int userId);
-    Task<bool> UpdateUserAvatarAsync(int userId, string avatar);
     Task<bool> UpdateUserAsync(int userId, User user);
+    Task<bool> UpdateUserAvatarAsync(int userId, string avatar);
+    Task<string?> GetUserAvatarAsync(int userId);
+
 }
 
 public class UserService : IUserService
@@ -102,6 +104,13 @@ public class UserService : IUserService
     {
         return await _userRepository.UpdateUserAvatarAsync(userId, avatar);
     }
+
+
+    public async Task<string?> GetUserAvatarAsync(int userId)
+    {
+        return await _userRepository.GetUserAvatarAsync(userId);
+    }
+
 
     public async Task<bool> UpdateUserAsync(int userId, User user)
     {

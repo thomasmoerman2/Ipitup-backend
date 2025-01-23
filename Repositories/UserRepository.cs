@@ -21,6 +21,8 @@ public interface IUserRepository
     Task<int> GetUserDailyStreakAsync(int userId);
     Task<bool> UpdateUserAvatarAsync(int userId, string avatar);
     Task<bool> UpdateUserAsync(int userId, User user);
+    Task<string?> GetUserAvatarAsync(int userId);
+
 }
 
 public class UserRepository : IUserRepository
@@ -419,9 +421,25 @@ public class UserRepository : IUserRepository
             var command = new MySqlCommand("UPDATE User SET avatar = @avatar WHERE userId = @userId", connection);
             command.Parameters.AddWithValue("@avatar", avatar);
             command.Parameters.AddWithValue("@userId", userId);
+
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
+
+
+    public async Task<string?> GetUserAvatarAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT avatar FROM User WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@userId", userId);
+
+            var result = await command.ExecuteScalarAsync();
+            return result != null ? result.ToString() : null;
+        }
+    }
+
 
     public async Task<bool> UpdateUserAsync(int userId, User user)
     {

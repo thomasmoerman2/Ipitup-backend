@@ -13,7 +13,6 @@ namespace Ipitup.Functions
             _logger.LogInformation("TestTrigger function worked");
             return new OkObjectResult(new { message = "TestTrigger worked!" });
         }
-        
         [Function("PostLoginTrigger")]
         public async Task<IActionResult> Run2([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "test/login")] HttpRequest req)
         {

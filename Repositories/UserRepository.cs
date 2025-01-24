@@ -1,7 +1,4 @@
 namespace Ipitup.Repositories;
-using System.Security.Cryptography;
-using System.Text;
-
 public interface IUserRepository
 {
     Task<bool> CheckConnection();
@@ -24,17 +21,14 @@ public interface IUserRepository
     Task<int> GetUserIdFromTokenAsync(string token);
     Task<string?> GetUserAvatarAsync(int userId);
 }
-
 public class UserRepository : IUserRepository
 {
     private readonly string _connectionString;
-
     public UserRepository()
     {
         _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString")
                             ?? throw new InvalidOperationException("Database connection string is not set.");
     }
-
     public async Task<bool> CheckConnection()
     {
         try
@@ -50,7 +44,6 @@ public class UserRepository : IUserRepository
             return false;
         }
     }
-
     public async Task<bool> CheckEmailAlreadyExists(string email)
     {
         try
@@ -61,7 +54,6 @@ public class UserRepository : IUserRepository
                 var command = new MySqlCommand("SELECT COUNT(*) FROM User WHERE userEmail = @email", connection);
                 command.Parameters.AddWithValue("@email", email);
                 var result = await command.ExecuteScalarAsync();
-
                 if (result != null && int.TryParse(result.ToString(), out int count))
                 {
                     return count > 0;
@@ -74,7 +66,6 @@ public class UserRepository : IUserRepository
             throw new Exception($"Database query error in CheckEmailAlreadyExists: {ex.Message}", ex);
         }
     }
-
     public async Task<User> CheckLoginAuth(string email, string password)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -82,7 +73,6 @@ public class UserRepository : IUserRepository
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM User WHERE userEmail = @email", connection);
             command.Parameters.AddWithValue("@email", email);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
@@ -106,17 +96,14 @@ public class UserRepository : IUserRepository
         }
         return null; // Return null als de verificatie mislukt
     }
-
     public async Task<User> AddUser(User user)
     {
         if (!await CheckConnection())
         {
             throw new Exception("Failed to connect to database");
         }
-
         // Hash het wachtwoord voordat het wordt opgeslagen
         user.UserPassword = BCrypt.Net.BCrypt.HashPassword(user.UserPassword);
-
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
@@ -139,8 +126,6 @@ public class UserRepository : IUserRepository
             }
         }
     }
-
-
     public async Task<IEnumerable<User>> GetAllUsersAsync()
     {
         var users = new List<User>();
@@ -148,7 +133,6 @@ public class UserRepository : IUserRepository
         {
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM User", connection);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
@@ -170,7 +154,6 @@ public class UserRepository : IUserRepository
         }
         return users;
     }
-
     public async Task<User?> GetUserByIdAsync(int userId)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -178,7 +161,6 @@ public class UserRepository : IUserRepository
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM User WHERE userId = @userId", connection);
             command.Parameters.AddWithValue("@userId", userId);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
@@ -201,7 +183,6 @@ public class UserRepository : IUserRepository
         }
         return null;
     }
-
     public async Task<List<User>> GetUserByFullNameAsync(string firstname, string lastname)
     {
         try
@@ -214,7 +195,6 @@ public class UserRepository : IUserRepository
                     return null;
                 }
                 var command = new MySqlCommand();
-
                 if (lastname == "")
                 {
                     command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND accountStatus = 'Public'", connection);
@@ -226,7 +206,6 @@ public class UserRepository : IUserRepository
                     command.Parameters.AddWithValue("@firstname", "%" + firstname + "%");
                     command.Parameters.AddWithValue("@lastname", "%" + lastname + "%");
                 }
-
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     var users = new List<User>();
@@ -251,29 +230,23 @@ public class UserRepository : IUserRepository
         }
         return null;
     }
-
     public async Task<AuthToken?> CreateAuthTokenAsync(int userId)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
-
             // Generate a secure random token
             var token = GenerateSecureToken();
             var createdAt = DateTime.UtcNow;
             var expiresAt = createdAt.AddDays(7); // Token expires in 7 days
-
             var command = new MySqlCommand(
                 "INSERT INTO AuthToken (userId, token, createdAt, expiresAt, isValid) VALUES (@userId, @token, @createdAt, @expiresAt, true)",
                 connection);
-
             command.Parameters.AddWithValue("@userId", userId);
             command.Parameters.AddWithValue("@token", token);
             command.Parameters.AddWithValue("@createdAt", createdAt);
             command.Parameters.AddWithValue("@expiresAt", expiresAt);
-
             await command.ExecuteNonQueryAsync();
-
             return new AuthToken
             {
                 UserId = userId,
@@ -284,7 +257,6 @@ public class UserRepository : IUserRepository
             };
         }
     }
-
     public async Task<AuthToken?> GetAuthTokenAsync(string token)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -294,7 +266,6 @@ public class UserRepository : IUserRepository
                 "SELECT * FROM AuthToken WHERE token = @token",
                 connection);
             command.Parameters.AddWithValue("@token", token);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
@@ -313,7 +284,6 @@ public class UserRepository : IUserRepository
         }
         return null;
     }
-
     public async Task<bool> InvalidateAuthTokenAsync(string token)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -323,19 +293,15 @@ public class UserRepository : IUserRepository
                 "UPDATE AuthToken SET isValid = false WHERE token = @token",
                 connection);
             command.Parameters.AddWithValue("@token", token);
-
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
     public async Task<bool> VerifyAuthTokenAsync(string token)
     {
         var authToken = await GetAuthTokenAsync(token);
         if (authToken == null) return false;
-
         return authToken.IsValid && authToken.ExpiresAt > DateTime.UtcNow;
     }
-
     private string GenerateSecureToken()
     {
         var randomBytes = new byte[32];
@@ -345,7 +311,6 @@ public class UserRepository : IUserRepository
         }
         return Convert.ToBase64String(randomBytes);
     }
-
     public async Task<string> PasswordResetByUserIdAsync(int userId)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -359,23 +324,18 @@ public class UserRepository : IUserRepository
             return newPassword;
         }
     }
-
     public async Task<bool> UpdateUserTotalScoreAsync(int userId, int score)
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-
         var command = new MySqlCommand(@"
             UPDATE User 
             SET totalScore = totalScore + @score 
             WHERE userId = @userId;", connection);
-
         command.Parameters.AddWithValue("@score", score);
         command.Parameters.AddWithValue("@userId", userId);
-
         return await command.ExecuteNonQueryAsync() > 0;
     }
-
     public async Task<bool> UpdateUserIsAdminAsync(int userId, bool isAdmin, string token)
     {
         if (!await VerifyAuthTokenAsync(token))
@@ -389,7 +349,6 @@ public class UserRepository : IUserRepository
         command.Parameters.AddWithValue("@userId", userId);
         return await command.ExecuteNonQueryAsync() > 0;
     }
-
     public async Task<int> GetUserDailyStreakAsync(int userId)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -397,19 +356,14 @@ public class UserRepository : IUserRepository
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT dailyStreak FROM User WHERE userId = @userId", connection);
             command.Parameters.AddWithValue("@userId", userId);
-
             var result = await command.ExecuteScalarAsync();
-
             if (result != null && int.TryParse(result.ToString(), out int dailyStreak))
             {
                 return dailyStreak;
             }
-
             return 0; // Indien niet gevonden, return 0 als default waarde
         }
     }
-    
-
     public async Task<bool> UpdateUserAvatarAsync(int userId, string avatar)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -418,12 +372,9 @@ public class UserRepository : IUserRepository
             var command = new MySqlCommand("UPDATE User SET avatar = @avatar WHERE userId = @userId", connection);
             command.Parameters.AddWithValue("@avatar", avatar);
             command.Parameters.AddWithValue("@userId", userId);
-
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
-
     public async Task<string?> GetUserAvatarAsync(int userId)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -431,13 +382,10 @@ public class UserRepository : IUserRepository
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT avatar FROM User WHERE userId = @userId", connection);
             command.Parameters.AddWithValue("@userId", userId);
-
             var result = await command.ExecuteScalarAsync();
             return result != null ? result.ToString() : null;
         }
     }
-
-
     public async Task<bool> UpdateUserAsync(int userId, User user)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -452,23 +400,19 @@ public class UserRepository : IUserRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
     public async Task<int> GetUserIdFromTokenAsync(string token)
     {
         Console.WriteLine("\n=== GetUserIdFromTokenAsync Start ===");
         Console.WriteLine($"Attempting to get userId for token: {token}");
-
         using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
                 await connection.OpenAsync();
                 Console.WriteLine("Database connection opened successfully");
-
                 var command = new MySqlCommand("SELECT userId FROM AuthToken WHERE token = @token", connection);
                 command.Parameters.AddWithValue("@token", token);
                 Console.WriteLine("Executing SQL query to fetch userId");
-
                 var result = await command.ExecuteScalarAsync();
                 Console.WriteLine($"Query result: {result ?? "null"}");
                 if (result != null && int.TryParse(result.ToString(), out int userId))

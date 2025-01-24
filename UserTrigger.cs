@@ -1,9 +1,3 @@
-using System.Text.Json;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging;
-
 namespace Ipitup.Functions
 {
     public class UserTrigger
@@ -14,8 +8,8 @@ namespace Ipitup.Functions
         private readonly IBadgeService _badgeService;
         private readonly IExerciseService _exerciseService;
         private readonly IFollowService _followService;
-
-        public UserTrigger(ILogger<UserTrigger> logger, IUserService userService, IActivityService activityService, IBadgeService badgeService, IExerciseService exerciseService, IFollowService followService)
+        private readonly INotificationService _notificationService;
+        public UserTrigger(ILogger<UserTrigger> logger, IUserService userService, IActivityService activityService, IBadgeService badgeService, IExerciseService exerciseService, IFollowService followService, INotificationService notificationService)
         {
             _logger = logger;
             _userService = userService;
@@ -23,8 +17,8 @@ namespace Ipitup.Functions
             _badgeService = badgeService;
             _exerciseService = exerciseService;
             _followService = followService;
+            _notificationService = notificationService;
         }
-
         [Function("Login")]
         public async Task<IActionResult> Login([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/login")] HttpRequest req)
         {
@@ -35,25 +29,21 @@ namespace Ipitup.Functions
                 {
                     PropertyNameCaseInsensitive = true
                 });
-
                 if (loginRequest == null || string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
                 {
                     return new BadRequestObjectResult(new { message = "Email and password are required" });
                 }
-
                 var user = await _userService.CheckLoginAuth(loginRequest.Email, loginRequest.Password);
                 if (user == null)
                 {
                     return new UnauthorizedObjectResult(new { message = "Invalid email or password" });
                 }
-
                 // Create auth token
                 var authToken = await _userService.CreateAuthTokenAsync(user.UserId);
                 if (authToken == null)
                 {
                     return new BadRequestObjectResult(new { message = "Failed to create auth token" });
                 }
-
                 return new OkObjectResult(new
                 {
                     userId = user.UserId,
@@ -71,13 +61,11 @@ namespace Ipitup.Functions
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
-
         private class LoginRequest
         {
             public string Email { get; set; } = string.Empty;
             public string Password { get; set; } = string.Empty;
         }
-
         [Function("VerifyToken")]
         public async Task<IActionResult> VerifyToken([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "verify")] HttpRequest req)
         {
@@ -88,15 +76,12 @@ namespace Ipitup.Functions
                 {
                     return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
                 }
-
                 string token = authHeader.Substring("Bearer ".Length);
                 bool isValid = await _userService.VerifyAuthTokenAsync(token);
-
                 if (!isValid)
                 {
                     return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
                 }
-
                 return new OkResult();
             }
             catch (Exception ex)
@@ -105,7 +90,6 @@ namespace Ipitup.Functions
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
-
         [Function("Logout")]
         public async Task<IActionResult> Logout([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/logout")] HttpRequest req)
         {
@@ -116,15 +100,12 @@ namespace Ipitup.Functions
                 {
                     return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
                 }
-
                 string token = authHeader.Substring("Bearer ".Length);
                 bool result = await _userService.InvalidateAuthTokenAsync(token);
-
                 if (!result)
                 {
                     return new BadRequestObjectResult(new { message = "Failed to logout" });
                 }
-
                 return new OkResult();
             }
             catch (Exception ex)
@@ -133,7 +114,6 @@ namespace Ipitup.Functions
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
-
         [Function("PostUserRegister")]
         public async Task<IActionResult> PostUserRegister([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/register")] HttpRequest req)
         {
@@ -150,7 +130,6 @@ namespace Ipitup.Functions
                     _logger.LogError($"Invalid request body: UserEmail={userRequest.UserEmail}, UserPassword={userRequest.UserPassword}, UserFirstname={userRequest.UserFirstname}, UserLastname={userRequest.UserLastname}, BirthDate={userRequest.BirthDate}. One or more of these values are empty or invalid.");
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
                 }
-
                 var emailExists = await _userService.CheckEmailAlreadyExists(userRequest.UserEmail);
                 if (emailExists)
                 {
@@ -168,6 +147,7 @@ namespace Ipitup.Functions
                     {
                         return new BadRequestObjectResult(new { message = "Failed to create auth token" });
                     }
+
                     return new OkObjectResult(new
                     {
                         message = "UserTrigger worked!",
@@ -198,7 +178,6 @@ namespace Ipitup.Functions
                 return new BadRequestObjectResult(new { message = "Error processing request", error = ex.Message });
             }
         }
-
         [Function("GetUserById")]
         public async Task<IActionResult> GetUserById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}")] HttpRequest req, string id)
@@ -207,16 +186,13 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
-
             return new OkObjectResult(new { userId = user.UserId, firstname = user.UserFirstname, lastname = user.UserLastname, email = user.UserEmail, accountStatus = user.AccountStatus, dailyStreak = user.DailyStreak, totalScore = user.TotalScore, isAdmin = user.IsAdmin });
         }
-
         [Function("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user")] HttpRequest req)
@@ -224,21 +200,17 @@ namespace Ipitup.Functions
             var users = await _userService.GetAllUsersAsync();
             return new OkObjectResult(users);
         }
-
         [Function("GetUserByFullName")]
         public async Task<IActionResult> GetUserByFullName(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/fullname")] HttpRequest req)
         {
             string firstname = req.Query["firstname"].ToString() ?? string.Empty;
             string lastname = req.Query["lastname"].ToString() ?? string.Empty;
-
-
             var user = await _userService.GetUserByFullNameAsync(firstname, lastname);
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
-
             return new OkObjectResult(new
             {
                 status = 200,
@@ -254,7 +226,6 @@ namespace Ipitup.Functions
                 })
             });
         }
-
         [Function("GetUserTotalScore")]
         public async Task<IActionResult> GetUserTotalScore(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/totalscore/{id}")] HttpRequest req, string id)
@@ -263,18 +234,13 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
-
             return new OkObjectResult(new { totalScore = user.TotalScore });
         }
-
-
-
         [Function("PasswordResetByUserId")]
         public async Task<IActionResult> PasswordResetByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "user/reset-password")] HttpRequest req)
@@ -286,18 +252,15 @@ namespace Ipitup.Functions
                 {
                     PropertyNameCaseInsensitive = true
                 });
-
                 if (request == null || request.UserId <= 0)
                 {
                     return new BadRequestObjectResult(new { message = "Invalid request. User ID is required." });
                 }
-
                 var result = await _userService.PasswordResetByUserIdAsync(request.UserId);
                 if (string.IsNullOrEmpty(result))
                 {
                     return new BadRequestObjectResult(new { message = "Failed to reset password" });
                 }
-
                 return new OkObjectResult(new
                 {
                     message = "Password reset successfully",
@@ -310,7 +273,6 @@ namespace Ipitup.Functions
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
-
         [Function("UpdateUserIsAdmin")]
         public async Task<IActionResult> UpdateUserIsAdmin(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/admin")] HttpRequest req)
@@ -333,12 +295,10 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User is admin updated successfully" });
         }
-
         private class PasswordResetRequest
         {
             public int UserId { get; set; }
         }
-
         [Function("GetUserDailyStreak")]
         public async Task<IActionResult> GetUserDailyStreak(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/dailystreak/{id}")] HttpRequest req, string id)
@@ -347,16 +307,13 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
-
             return new OkObjectResult(new { dailyStreak = user.DailyStreak });
         }
-
         [Function("UpdateUserAvatar")]
         public async Task<IActionResult> UpdateUserAvatar(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/avatar/{id}")] HttpRequest req, string id)
@@ -377,12 +334,10 @@ namespace Ipitup.Functions
             }
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var avatarData = JsonConvert.DeserializeObject<Dictionary<string, string>>(requestBody);
-
             if (avatarData == null || !avatarData.ContainsKey("avatar"))
             {
                 return new BadRequestObjectResult(new { message = "Invalid JSON format" });
             }
-
             var result = await _userService.UpdateUserAvatarAsync(userId, avatarData["avatar"]);
             if (!result)
             {
@@ -390,7 +345,6 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User avatar updated successfully" });
         }
-
         [Function("UpdateUser")]
         public async Task<IActionResult> UpdateUser(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/{id}")] HttpRequest req, string id)
@@ -422,7 +376,6 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User updated successfully" });
         }
-
         [Function("GetUserAvatar")]
         public async Task<IActionResult> GetUserAvatar(
                  [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/avatar/{id}")] HttpRequest req, string id)
@@ -431,27 +384,21 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-
             var avatar = await _userService.GetUserAvatarAsync(userId);
             return new OkObjectResult(new { avatar });
         }
-
-
         [Function("GetUserByIdLimited")]
         public async Task<IActionResult> GetUserByIdLimited(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/info/{id}")] HttpRequest req, string id)
         {
-
             if (!int.TryParse(id, out int userId))
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-
             //get user id from token (token not required)
             var authHeader = req.Headers["Authorization"].FirstOrDefault();
             //output authHeader
             var userIdFromToken = 0;
-
             if (authHeader != null && authHeader.StartsWith("Bearer "))
             {
                 var token = authHeader.Substring("Bearer ".Length);
@@ -460,31 +407,23 @@ namespace Ipitup.Functions
             else
             {
             }
-
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
-
             //get latest 3 activities
             var activities = await _activityService.GetLatestActivityUserByIdAsync(userId);
             var latestActivities = activities.Take(3).ToList();
-
-
             var exerciseIds = latestActivities.Select(a => a.ExerciseId).ToList();
             var exercises = await _exerciseService.GetExercisesByIdsAsync(exerciseIds);
             var latestExercises = exercises.Take(3).ToList();
-
-
             var isFollowing = false;
             Follow follow = null;
-
             if (userIdFromToken > 0)
             {
                 follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
             }
-
             //get latest 3 achievements
             var achievements = await _badgeService.GetLatestBadgesByUserIdAsync(userId, 8);
             var latestAchievements = achievements.Take(8).ToList();
@@ -506,7 +445,6 @@ namespace Ipitup.Functions
                 description = a.BadgeDescription,
                 amount = a.BadgeAmount
             }).ToList();
-
             if (follow != null && follow.Status == FollowStatus.Accepted)
             {
                 return new OkObjectResult(new
@@ -529,7 +467,6 @@ namespace Ipitup.Functions
             {
                 if (user.AccountStatus == 0)
                 {
-
                     return new OkObjectResult(new
                     {
                         userId = user.UserId,
@@ -558,8 +495,6 @@ namespace Ipitup.Functions
                 }
             }
         }
-
-
         [Function("GetListOfFollowingByUserId")]
         public async Task<IActionResult> GetListOfFollowingByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}/following")] HttpRequest req, string id)
@@ -578,10 +513,8 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-
             var following = await _followService.GetFollowingAsync(userId);
             var formattedFollowing = new List<object>();
-
             foreach (var follow in following)
             {
                 var user = await _userService.GetUserByIdAsync(follow.FollowingId);
@@ -593,11 +526,8 @@ namespace Ipitup.Functions
                     avatar = user.Avatar
                 });
             }
-
             return new OkObjectResult(formattedFollowing);
         }
-
-
         [Function("GetListOfFollowersByUserId")]
         public async Task<IActionResult> GetListOfFollowersByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}/followers")] HttpRequest req, string id)
@@ -616,10 +546,8 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-
             var followers = await _followService.GetFollowersAsync(userId);
             var formattedFollowers = new List<object>();
-
             foreach (var follower in followers)
             {
                 var user = await _userService.GetUserByIdAsync(follower.FollowerId);
@@ -631,7 +559,6 @@ namespace Ipitup.Functions
                     avatar = user.Avatar
                 });
             }
-
             return new OkObjectResult(formattedFollowers);
         }
     }

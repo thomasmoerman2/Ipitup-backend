@@ -96,10 +96,7 @@ public class BadgeTrigger
             return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
         }
         var badge = await _badgeService.GetBadgeByIdAsync(badgeId);
-        if (badge == null)
-        {
-            return new NotFoundObjectResult(new { message = "Badge not found" });
-        }
+
         return new OkObjectResult(badge);
     }
     [Function("AddBadgeToUser")]
@@ -149,11 +146,7 @@ public class BadgeTrigger
             return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
         }
         var badges = await _badgeService.GetBadgesByUserIdAsync(userIdParsed);
-        if (badges == null || !badges.Any())
-        {
-            return new NotFoundObjectResult(new { message = "No badges found for this user." });
-        }
-        return new OkObjectResult(new 
+        return new OkObjectResult(new
         {
             count = badges.Count(),  // Aantal badges toevoegen
             badges = badges          // Lijst van badges
@@ -168,10 +161,7 @@ public class BadgeTrigger
             return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
         }
         var badges = await _badgeService.GetLatestBadgesByUserIdAsync(userIdParsed, 8);  // Haal max 8 op
-        if (badges == null || !badges.Any())
-        {
-            return new NotFoundObjectResult(new { message = "No badges found for this user." });
-        }
+
         return new OkObjectResult(badges);
     }
 }

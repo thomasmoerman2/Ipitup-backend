@@ -88,10 +88,6 @@ public class ActivityTrigger
             return new BadRequestObjectResult(new { message = "Invalid user ID format. It must be a number." });
         }
         var activities = await _activityService.GetLatestActivityUserByIdAsync(userid);
-        if (activities == null || !activities.Any())
-        {
-            return new NotFoundObjectResult(new { message = "No activities found for this user." });
-        }
         return new OkObjectResult(new { count = activities.Count });
     }
     [Function("GetAllActivities")]

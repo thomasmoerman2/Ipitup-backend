@@ -1,44 +1,1 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging;
-
-namespace Ipitup.Functions
-{
-    public class ConfigTrigger
-    {
-        private readonly ILogger<ConfigTrigger> _logger;
-        private static readonly DateTime StartTime = DateTime.UtcNow;
-
-        public ConfigTrigger(ILogger<ConfigTrigger> logger)
-        {
-            _logger = logger;
-        }
-
-        [Function("GetConfigHealth")]
-        public IActionResult GetConfigHealth([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "config/health")] HttpRequest req)
-        {
-            return new OkResult();
-        }
-
-        [Function("GetConfigUptime")]
-        public IActionResult GetConfigUptime([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "config/uptime")] HttpRequest req)
-        {
-            var uptime = DateTime.UtcNow.Subtract(StartTime);
-            return new OkObjectResult(new
-            {
-                startTime = StartTime.ToString("yyyy-MM-dd HH:mm:ss UTC"),
-                currentTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC"),
-                uptime = new
-                {
-                    days = uptime.Days,
-                    hours = uptime.Hours,
-                    minutes = uptime.Minutes,
-                    seconds = uptime.Seconds,
-                    totalHours = Math.Round(uptime.TotalHours, 2),
-                    formatted = $"{uptime.Days}d {uptime.Hours}h {uptime.Minutes}m {uptime.Seconds}s"
-                }
-            });
-        }
-    }
-}
+namespace Ipitup.Functions{    public class ConfigTrigger    {        private readonly ILogger<ConfigTrigger> _logger;        private static readonly DateTime StartTime = DateTime.UtcNow;        public ConfigTrigger(ILogger<ConfigTrigger> logger)        {            _logger = logger;        }        [Function("GetConfigHealth")]        public IActionResult GetConfigHealth([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "config/health")] HttpRequest req)        {            return new OkResult();        }        [Function("GetConfigUptime")]        public IActionResult GetConfigUptime([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "config/uptime")] HttpRequest req)        {            var uptime = DateTime.UtcNow.Subtract(StartTime);            return new OkObjectResult(new            {                startTime = StartTime.ToString("yyyy-MM-dd HH:mm:ss UTC"),                currentTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC"),                uptime = new                {                    days = uptime.Days,                    hours = uptime.Hours,                    minutes = uptime.Minutes,                    seconds = uptime.Seconds,                    totalHours = Math.Round(uptime.TotalHours, 2),                    formatted = $"{uptime.Days}d {uptime.Hours}h {uptime.Minutes}m {uptime.Seconds}s"                }            });        }    }}

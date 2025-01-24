@@ -1,5 +1,4 @@
 namespace Ipitup.Services;
-
 public interface IBadgeService
 {
     Task<bool> AddBadgeAsync(Badge badge);
@@ -11,67 +10,52 @@ public interface IBadgeService
     Task<bool> UpdateBadgeByIdAsync(int id, Badge badge);
     Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount);
     Task<bool> RemoveBadgeFromUserAsync(int badgeId, int userId);
-
 }
-
 public class BadgeService : IBadgeService
 {
     private readonly IBadgeRepository _badgeRepository;
-
     public BadgeService(IBadgeRepository badgeRepository)
     {
         _badgeRepository = badgeRepository;
     }
-
     public async Task<bool> AddBadgeAsync(Badge badge)
     {
         if (string.IsNullOrWhiteSpace(badge.BadgeName))
         {
             throw new ArgumentException("Badge name is required");
         }
-
         return await _badgeRepository.AddBadgeAsync(badge);
     }
-
     public async Task<IEnumerable<Badge>> GetAllBadgesAsync()
     {
         return await _badgeRepository.GetAllBadgesAsync();
     }
-
     public async Task<Badge?> GetBadgeByIdAsync(int id)
     {
         return await _badgeRepository.GetBadgeByIdAsync(id);
     }
-
     public async Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId)
     {
         return await _badgeRepository.GetBadgesByUserIdAsync(userId);
     }
-
     public async Task<bool> AddBadgeToUserAsync(int badgeId, int userId)
     {
         return await _badgeRepository.AddBadgeToUserAsync(badgeId, userId);
     }
-
     public async Task<bool> RemoveBadgeFromUserAsync(int badgeId, int userId)
     {
         return await _badgeRepository.RemoveBadgeFromUserAsync(badgeId, userId);
     }
-
-
     public async Task<bool> DeleteBadgeAsync(int id)
     {
         return await _badgeRepository.DeleteBadgeAsync(id);
     }
-
     public async Task<bool> UpdateBadgeByIdAsync(int id, Badge badge)
     {
         return await _badgeRepository.UpdateBadgeByIdAsync(id, badge);
     }
-
     public async Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount)
     {
         return await _badgeRepository.GetLatestBadgesByUserIdAsync(userId, maxCount);
     }
-
 }

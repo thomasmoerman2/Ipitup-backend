@@ -1,5 +1,4 @@
 namespace Ipitup.Repositories;
-
 public interface IActivityRepository
 {
     Task<bool> AddActivityAsync(Activity activity);
@@ -10,19 +9,15 @@ public interface IActivityRepository
     Task<bool> DeleteActivityAsync(int id);
     Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
     Task<int> GetActivityCountByUserIdAsync(int userId);
-
 }
-
 public class ActivityRepository : IActivityRepository
 {
     private readonly string _connectionString;
-
     public ActivityRepository()
     {
         _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString")
                             ?? throw new InvalidOperationException("Database connection string is not set.");
     }
-
     public async Task<bool> AddActivityAsync(Activity activity)
     {
         try
@@ -32,14 +27,12 @@ public class ActivityRepository : IActivityRepository
             var command = new MySqlCommand(@"
                 INSERT INTO Activity (userId, activityScore, activityDuration, activityDate, locationId, exerciseId) 
                 VALUES (@userId, @score, @duration, @date, @location, @exercise)", connection);
-
             command.Parameters.AddWithValue("@userId", activity.UserId);
             command.Parameters.AddWithValue("@score", activity.ActivityScore);
             command.Parameters.AddWithValue("@duration", activity.ActivityDuration);
             command.Parameters.AddWithValue("@date", activity.ActivityDate);
             command.Parameters.AddWithValue("@location", activity.LocationId ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("@exercise", activity.ExerciseId ?? (object)DBNull.Value);
-
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
         }
@@ -48,7 +41,6 @@ public class ActivityRepository : IActivityRepository
             throw new Exception("Error adding activity", ex);
         }
     }
-
     public async Task<int> GetActivityCountByUserIdAsync(int userId)
     {
         using var connection = new MySqlConnection(_connectionString);
@@ -56,19 +48,15 @@ public class ActivityRepository : IActivityRepository
         var command = new MySqlCommand("SELECT COUNT(*) FROM Activity WHERE userId = @userId", connection);
         command.Parameters.AddWithValue("@userId", userId);
         command.CommandTimeout = 30;  // Zet een tijdslimiet op de query
-
         var result = await command.ExecuteScalarAsync();
         return result != null ? Convert.ToInt32(result) : 0;
     }
-
-
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {
         var activities = new List<Activity>();
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         var command = new MySqlCommand("SELECT * FROM Activity", connection);
-
         using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
@@ -85,14 +73,12 @@ public class ActivityRepository : IActivityRepository
         }
         return activities;
     }
-
     public async Task<Activity?> GetActivityByIdAsync(int id)
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         var command = new MySqlCommand("SELECT * FROM Activity WHERE activityId = @id", connection);
         command.Parameters.AddWithValue("@id", id);
-
         using var reader = await command.ExecuteReaderAsync();
         if (await reader.ReadAsync())
         {
@@ -109,7 +95,6 @@ public class ActivityRepository : IActivityRepository
         }
         return null;
     }
-
     public async Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId)
     {
         var activities = new List<Activity>();
@@ -117,7 +102,6 @@ public class ActivityRepository : IActivityRepository
         await connection.OpenAsync();
         var command = new MySqlCommand("SELECT * FROM Activity WHERE locationId = @locationId", connection);
         command.Parameters.AddWithValue("@locationId", locationId);
-
         using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
@@ -134,7 +118,6 @@ public class ActivityRepository : IActivityRepository
         }
         return activities;
     }
-
     public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId)
     {
         var activities = new List<Activity>();
@@ -158,8 +141,6 @@ public class ActivityRepository : IActivityRepository
         }
         return activities;
     }
-
-
     public async Task<bool> DeleteActivityAsync(int id)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -170,7 +151,6 @@ public class ActivityRepository : IActivityRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
     public async Task<bool> UpdateActivityByIdAsync(int id, Activity activity)
     {
         using (var connection = new MySqlConnection(_connectionString))

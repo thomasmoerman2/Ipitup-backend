@@ -1,5 +1,4 @@
 namespace Ipitup.Repositories;
-
 public interface IBadgeRepository
 {
     Task<bool> AddBadgeAsync(Badge badge);
@@ -11,19 +10,15 @@ public interface IBadgeRepository
     Task<bool> UpdateBadgeByIdAsync(int id, Badge badge);
     Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount);
     Task<bool> RemoveBadgeFromUserAsync(int badgeId, int userId);
-
 }
-
 public class BadgeRepository : IBadgeRepository
 {
     private readonly string _connectionString;
-
     public BadgeRepository()
     {
         _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString")
                             ?? throw new InvalidOperationException("Database connection string is not set.");
     }
-
     public async Task<bool> AddBadgeAsync(Badge badge)
     {
         try
@@ -38,7 +33,6 @@ public class BadgeRepository : IBadgeRepository
                 command.Parameters.AddWithValue("@name", badge.BadgeName);
                 command.Parameters.AddWithValue("@description", badge.BadgeDescription ?? (object)DBNull.Value);
                 command.Parameters.AddWithValue("@amount", badge.BadgeAmount);
-
                 var result = await command.ExecuteNonQueryAsync();
                 return result > 0;
             }
@@ -48,16 +42,13 @@ public class BadgeRepository : IBadgeRepository
             throw new Exception("Error adding badge", ex);
         }
     }
-
     public async Task<IEnumerable<Badge>> GetAllBadgesAsync()
     {
         var badges = new List<Badge>();
-
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM Badge", connection);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
@@ -72,10 +63,8 @@ public class BadgeRepository : IBadgeRepository
                 }
             }
         }
-
         return badges;
     }
-
     public async Task<Badge?> GetBadgeByIdAsync(int id)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -83,7 +72,6 @@ public class BadgeRepository : IBadgeRepository
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM Badge WHERE badgeId = @id", connection);
             command.Parameters.AddWithValue("@id", id);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
@@ -100,11 +88,9 @@ public class BadgeRepository : IBadgeRepository
         }
         return null;
     }
-
     public async Task<IEnumerable<Badge>> GetBadgesByUserIdAsync(int userId)
     {
         var badges = new List<Badge>();
-
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
@@ -113,7 +99,6 @@ public class BadgeRepository : IBadgeRepository
                 connection
             );
             command.Parameters.AddWithValue("@userId", userId);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
@@ -128,10 +113,8 @@ public class BadgeRepository : IBadgeRepository
                 }
             }
         }
-
         return badges;
     }
-
     public async Task<bool> AddBadgeToUserAsync(int badgeId, int userId)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -140,12 +123,10 @@ public class BadgeRepository : IBadgeRepository
             var command = new MySqlCommand("INSERT INTO BadgeUser (badgeId, userId) VALUES (@badgeId, @userId)", connection);
             command.Parameters.AddWithValue("@badgeId", badgeId);
             command.Parameters.AddWithValue("@userId", userId);
-
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
         }
     }
-
     public async Task<bool> RemoveBadgeFromUserAsync(int badgeId, int userId)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -154,13 +135,10 @@ public class BadgeRepository : IBadgeRepository
             var command = new MySqlCommand("DELETE FROM BadgeUser WHERE badgeId = @badgeId AND userId = @userId", connection);
             command.Parameters.AddWithValue("@badgeId", badgeId);
             command.Parameters.AddWithValue("@userId", userId);
-
             var result = await command.ExecuteNonQueryAsync();
             return result > 0;
         }
     }
-
-
     public async Task<bool> DeleteBadgeAsync(int id)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -171,7 +149,6 @@ public class BadgeRepository : IBadgeRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
     public async Task<bool> UpdateBadgeByIdAsync(int id, Badge badge)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -185,11 +162,9 @@ public class BadgeRepository : IBadgeRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
     public async Task<IEnumerable<Badge>> GetLatestBadgesByUserIdAsync(int userId, int maxCount)
     {
         var badges = new List<Badge>();
-
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
@@ -202,7 +177,6 @@ public class BadgeRepository : IBadgeRepository
             );
             command.Parameters.AddWithValue("@userId", userId);
             command.Parameters.AddWithValue("@maxCount", maxCount);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
@@ -217,8 +191,6 @@ public class BadgeRepository : IBadgeRepository
                 }
             }
         }
-
         return badges;
     }
-
 }

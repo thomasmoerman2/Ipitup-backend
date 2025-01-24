@@ -1,5 +1,4 @@
 namespace Ipitup.Repositories;
-
 public interface IExerciseRepository
 {
     Task<bool> AddExerciseAsync(Exercise exercise);
@@ -11,17 +10,14 @@ public interface IExerciseRepository
     Task<List<Exercise>> GetAllExercisesByCategoriesAsync(List<string> categories);
     Task<List<Exercise>> GetExercisesByIdsAsync(List<int?> ids);
 }
-
 public class ExerciseRepository : IExerciseRepository
 {
     private readonly string _connectionString;
-
     public ExerciseRepository()
     {
         _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString")
                             ?? throw new InvalidOperationException("Database connection string is not set.");
     }
-
     public async Task<bool> AddExerciseAsync(Exercise exercise)
     {
         try
@@ -34,7 +30,6 @@ public class ExerciseRepository : IExerciseRepository
                 command.Parameters.AddWithValue("@type", exercise.ExerciseType);
                 command.Parameters.AddWithValue("@instructions", exercise.ExerciseInstructions ?? (object)DBNull.Value);
                 command.Parameters.AddWithValue("@time", exercise.ExerciseTime);
-
                 var result = await command.ExecuteNonQueryAsync();
                 return result > 0;
             }
@@ -44,16 +39,13 @@ public class ExerciseRepository : IExerciseRepository
             throw new Exception("Error adding exercise", ex);
         }
     }
-
     public async Task<IEnumerable<Exercise>> GetAllExercisesAsync()
     {
         var exercises = new List<Exercise>();
-
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM Exercise", connection);
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
@@ -65,15 +57,12 @@ public class ExerciseRepository : IExerciseRepository
                         ExerciseType = reader.GetString(reader.GetOrdinal("exerciseType")),
                         ExerciseInstructions = reader.IsDBNull(reader.GetOrdinal("exerciseInstructions")) ? null : reader.GetString(reader.GetOrdinal("exerciseInstructions")),
                         ExerciseTime = reader.GetInt32(reader.GetOrdinal("exerciseTime"))
-
                     });
                 }
             }
         }
-
         return exercises;
     }
-
     public async Task<Exercise?> GetExerciseByIdAsync(int id)
     {
         Console.WriteLine($"Attempting to get exercise with ID: {id}");
@@ -85,7 +74,6 @@ public class ExerciseRepository : IExerciseRepository
                 var command = new MySqlCommand("SELECT * FROM Exercise WHERE exerciseId = @id", connection);
                 command.Parameters.AddWithValue("@id", id);
                 Console.WriteLine($"Executing query for ID {id}");
-
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     if (await reader.ReadAsync())
@@ -112,7 +100,6 @@ public class ExerciseRepository : IExerciseRepository
         }
         return null;
     }
-
     public async Task<List<Exercise>> GetRandomExerciseAsync()
     {
         var exercises = new List<Exercise>();
@@ -126,7 +113,6 @@ public class ExerciseRepository : IExerciseRepository
                     "SELECT * FROM Exercise ORDER BY RAND() LIMIT 3",
                     connection
                 );
-
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
@@ -148,10 +134,8 @@ public class ExerciseRepository : IExerciseRepository
                 throw;
             }
         }
-
         return exercises;
     }
-
     public async Task<bool> DeleteExerciseAsync(int id)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -163,7 +147,6 @@ public class ExerciseRepository : IExerciseRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
     public async Task<bool> UpdateExerciseByIdAsync(int id, Exercise exercise)
     {
         using (var connection = new MySqlConnection(_connectionString))
@@ -178,7 +161,6 @@ public class ExerciseRepository : IExerciseRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
-
     public async Task<List<Exercise>> GetAllExercisesByCategoriesAsync(List<string> categories)
     {
         var exercises = new List<Exercise>();
@@ -204,7 +186,6 @@ public class ExerciseRepository : IExerciseRepository
         }
         return exercises;
     }
-
     public async Task<List<Exercise>> GetExercisesByIdsAsync(List<int?> ids)
     {
         var exercises = new List<Exercise>();

@@ -446,21 +446,21 @@ namespace Ipitup.Functions
 
             var exercises = await _exerciseService.GetExercisesByIdsAsync(exerciseIds) ?? new List<Exercise>();
             var latestExercises = exercises.Take(3).ToList();
+            var isFollowing = false;
+            Follow follow = null;
 
-            Follow? follow = null;
-            var authHeader = req.Headers["Authorization"].FirstOrDefault();
-            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            if (userIdFromToken > 0)
             {
-                var token = authHeader.Substring("Bearer ".Length);
-                var userIdFromToken = await _userService.GetUserIdFromTokenAsync(token);
-                if (userIdFromToken > 0)
-                {
-                    follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
-                }
+                follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
             }
 
             var achievements = await _badgeService.GetLatestBadgesByUserIdAsync(userId, 8) ?? new List<Badge>();
             var latestAchievements = achievements.Take(8).ToList();
+
+            if (user.UserId == userId)
+            {
+                return new UnauthorizedObjectResult(new { message = "You cannot request information about yourself" });
+            }
 
             var exercisesObject = latestActivities.Select(a => new
             {
@@ -495,76 +495,36 @@ namespace Ipitup.Functions
             }
             else if (user.AccountStatus == AccountStatus.Public)
             {
-                return new OkObjectResult(new
+                if (user.AccountStatus == 0)
                 {
-                    userId = user.UserId,
-                    isFollowing = follow?.Status == FollowStatus.Accepted,
-                    firstname = user.UserFirstname,
-                    lastname = user.UserLastname,
-                    avatar = user.Avatar,
-                    exercises = exercisesObject,
-                    accountStatus = user.AccountStatus,
-                    achievements = achievementsObject,
-                    leaderboard = new { score = user.TotalScore }
-                });
-            }
-            else
-            {
-                return new OkObjectResult(new
+                    return new OkObjectResult(new
+                    {
+                        userId = user.UserId,
+                        isFollowing = follow != null && follow.Status == FollowStatus.Accepted ? true : false,
+                        firstname = user.UserFirstname,
+                        lastname = user.UserLastname,
+                        avatar = user.Avatar,
+                        exercises = exercisesObject,
+                        accountStatus = user.AccountStatus,
+                        achievements = achievementsObject,
+                        leaderboard = new
+                        {
+                            score = user.TotalScore
+                        }
+                    });
+                }
+                else
                 {
-                    userId = user.UserId,
-                    accountStatus = user.AccountStatus,
-                    firstname = user.UserFirstname,
-                    lastname = user.UserLastname,
-                    avatar = user.Avatar ?? string.Empty,
-                    dailyStreak = user.DailyStreak, 
-                    isPending = follow?.Status == FollowStatus.Pending
-                });
+                    return new OkObjectResult(new
+                    {
+                        accountStatus = user.AccountStatus,
+                        firstname = user.UserFirstname,
+                        lastname = user.UserLastname,
+                        isPending = follow.Status == FollowStatus.Pending ? true : false
+                    });
+                }
             }
         }
-
-
-
-        [Function("UpdateAccountStatus")]
-        public async Task<IActionResult> UpdateAccountStatus(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/accountstatus")] HttpRequest req)
-        {
-            var authHeader = req.Headers["Authorization"].FirstOrDefault();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-            {
-                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
-            }
-
-            var token = authHeader.Substring("Bearer ".Length);
-            var userId = await _userService.GetUserIdFromTokenAsync(token);
-            if (userId == 0)
-            {
-                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
-            }
-
-            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var request = JsonConvert.DeserializeObject<Dictionary<string, string>>(requestBody);
-
-            if (request == null || !request.ContainsKey("accountStatus"))
-            {
-                return new BadRequestObjectResult(new { message = "Invalid JSON format" });
-            }
-
-            var newStatus = Enum.TryParse<AccountStatus>(request["accountStatus"], out var accountStatus)
-                ? accountStatus
-                : AccountStatus.Private;
-
-            var result = await _userService.UpdateUserAccountStatusAsync(userId, newStatus);
-
-            if (!result)
-            {
-                return new BadRequestObjectResult(new { message = "Failed to update account status" });
-            }
-
-            return new OkObjectResult(new { message = "Account status updated successfully", status = newStatus });
-        }
-
-
         [Function("GetListOfFollowingByUserId")]
         public async Task<IActionResult> GetListOfFollowingByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}/following")] HttpRequest req, string id)

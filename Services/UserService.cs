@@ -19,6 +19,8 @@ public interface IUserService
     Task<bool> UpdateUserAvatarAsync(int userId, string avatar);
     Task<string?> GetUserAvatarAsync(int userId);
     Task<int> GetUserIdFromTokenAsync(string token);
+    Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus);
+
 }
 public class UserService : IUserService
 {
@@ -99,4 +101,11 @@ public class UserService : IUserService
     {
         return await _userRepository.GetUserIdFromTokenAsync(token);
     }
+
+    public async Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus)
+    {
+        return await _userRepository.UpdateUserAccountStatusAsync(userId, accountStatus);
+    }
+
+
 }

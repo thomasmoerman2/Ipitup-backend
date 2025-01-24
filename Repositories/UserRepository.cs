@@ -20,6 +20,8 @@ public interface IUserRepository
     Task<bool> UpdateUserAsync(int userId, User user);
     Task<int> GetUserIdFromTokenAsync(string token);
     Task<string?> GetUserAvatarAsync(int userId);
+    Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus);
+
 }
 public class UserRepository : IUserRepository
 {
@@ -437,4 +439,17 @@ public class UserRepository : IUserRepository
             }
         }
     }
+
+    public async Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE User SET accountStatus = @status WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@status", accountStatus.ToString());
+            command.Parameters.AddWithValue("@userId", userId);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
 }

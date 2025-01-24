@@ -495,6 +495,48 @@ namespace Ipitup.Functions
                 }
             }
         }
+
+
+        [Function("UpdateAccountStatus")]
+        public async Task<IActionResult> UpdateAccountStatus(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/accountstatus")] HttpRequest req)
+        {
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+            }
+
+            var token = authHeader.Substring("Bearer ".Length);
+            var userId = await _userService.GetUserIdFromTokenAsync(token);
+            if (userId == 0)
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+            }
+
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var request = JsonConvert.DeserializeObject<Dictionary<string, string>>(requestBody);
+
+            if (request == null || !request.ContainsKey("accountStatus"))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+            }
+
+            var newStatus = Enum.TryParse<AccountStatus>(request["accountStatus"], out var accountStatus)
+                ? accountStatus
+                : AccountStatus.Private;
+
+            var result = await _userService.UpdateUserAccountStatusAsync(userId, newStatus);
+
+            if (!result)
+            {
+                return new BadRequestObjectResult(new { message = "Failed to update account status" });
+            }
+
+            return new OkObjectResult(new { message = "Account status updated successfully", status = newStatus });
+        }
+
+
         [Function("GetListOfFollowingByUserId")]
         public async Task<IActionResult> GetListOfFollowingByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}/following")] HttpRequest req, string id)

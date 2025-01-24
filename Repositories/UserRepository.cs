@@ -199,12 +199,12 @@ public class UserRepository : IUserRepository
                 var command = new MySqlCommand();
                 if (lastname == "")
                 {
-                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND accountStatus = 'Public'", connection);
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname", connection);
                     command.Parameters.AddWithValue("@firstname", "%" + firstname + "%");
                 }
                 else
                 {
-                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND userLastname LIKE @lastname AND accountStatus = 'Public'", connection);
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND userLastname LIKE @lastname", connection);
                     command.Parameters.AddWithValue("@firstname", "%" + firstname + "%");
                     command.Parameters.AddWithValue("@lastname", "%" + lastname + "%");
                 }

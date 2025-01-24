@@ -395,39 +395,34 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-            //get user id from token (token not required)
-            var authHeader = req.Headers["Authorization"].FirstOrDefault();
-            //output authHeader
-            var userIdFromToken = 0;
-            if (authHeader != null && authHeader.StartsWith("Bearer "))
-            {
-                var token = authHeader.Substring("Bearer ".Length);
-                userIdFromToken = await _userService.GetUserIdFromTokenAsync(token);
-            }
-            else
-            {
-            }
+
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
-            //get latest 3 activities
-            var activities = await _activityService.GetLatestActivityUserByIdAsync(userId);
+
+            var activities = await _activityService.GetLatestActivityUserByIdAsync(userId) ?? new List<Activity>();
             var latestActivities = activities.Take(3).ToList();
             var exerciseIds = latestActivities.Select(a => a.ExerciseId).ToList();
-            var exercises = await _exerciseService.GetExercisesByIdsAsync(exerciseIds);
-            var latestExercises = exercises.Take(3).ToList();
-            var isFollowing = false;
-            Follow follow = null;
-            if (userIdFromToken > 0)
-            {
-                follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
-            }
-            //get latest 3 achievements
-            var achievements = await _badgeService.GetLatestBadgesByUserIdAsync(userId, 8);
-            var latestAchievements = achievements.Take(8).ToList();
 
+            var exercises = await _exerciseService.GetExercisesByIdsAsync(exerciseIds) ?? new List<Exercise>();
+            var latestExercises = exercises.Take(3).ToList();
+
+            Follow? follow = null;
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length);
+                var userIdFromToken = await _userService.GetUserIdFromTokenAsync(token);
+                if (userIdFromToken > 0)
+                {
+                    follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
+                }
+            }
+
+            var achievements = await _badgeService.GetLatestBadgesByUserIdAsync(userId, 8) ?? new List<Badge>();
+            var latestAchievements = achievements.Take(8).ToList();
 
             var exercisesObject = latestActivities.Select(a => new
             {
@@ -437,7 +432,6 @@ namespace Ipitup.Functions
                 score = a.ActivityScore
             }).ToList();
 
-
             var achievementsObject = latestAchievements.Select(a => new
             {
                 id = a.BadgeId,
@@ -445,56 +439,51 @@ namespace Ipitup.Functions
                 description = a.BadgeDescription,
                 amount = a.BadgeAmount
             }).ToList();
+
             if (follow != null && follow.Status == FollowStatus.Accepted)
             {
                 return new OkObjectResult(new
                 {
                     userId = user.UserId,
-                    isFollowing = follow.Status == FollowStatus.Accepted ? true : false,
+                    isFollowing = true,
                     firstname = user.UserFirstname,
                     lastname = user.UserLastname,
                     avatar = user.Avatar,
                     exercises = exercisesObject,
                     accountStatus = user.AccountStatus,
                     achievements = achievementsObject,
-                    leaderboard = new
-                    {
-                        score = user.TotalScore
-                    }
+                    leaderboard = new { score = user.TotalScore }
+                });
+            }
+            else if (user.AccountStatus == AccountStatus.Public)
+            {
+                return new OkObjectResult(new
+                {
+                    userId = user.UserId,
+                    isFollowing = follow?.Status == FollowStatus.Accepted,
+                    firstname = user.UserFirstname,
+                    lastname = user.UserLastname,
+                    avatar = user.Avatar,
+                    exercises = exercisesObject,
+                    accountStatus = user.AccountStatus,
+                    achievements = achievementsObject,
+                    leaderboard = new { score = user.TotalScore }
                 });
             }
             else
             {
-                if (user.AccountStatus == 0)
+                return new OkObjectResult(new
                 {
-                    return new OkObjectResult(new
-                    {
-                        userId = user.UserId,
-                        isFollowing = follow != null && follow.Status == FollowStatus.Accepted ? true : false,
-                        firstname = user.UserFirstname,
-                        lastname = user.UserLastname,
-                        avatar = user.Avatar,
-                        exercises = exercisesObject,
-                        accountStatus = user.AccountStatus,
-                        achievements = achievementsObject,
-                        leaderboard = new
-                        {
-                            score = user.TotalScore
-                        }
-                    });
-                }
-                else
-                {
-                    return new OkObjectResult(new
-                    {
-                        accountStatus = user.AccountStatus,
-                        firstname = user.UserFirstname,
-                        lastname = user.UserLastname,
-                        isPending = follow.Status == FollowStatus.Pending
-                    });
-                }
+                    userId = user.UserId,
+                    accountStatus = user.AccountStatus,
+                    firstname = user.UserFirstname,
+                    lastname = user.UserLastname,
+                    avatar = user.Avatar ?? string.Empty,
+                    isPending = follow?.Status == FollowStatus.Pending
+                });
             }
         }
+
 
 
         [Function("UpdateAccountStatus")]

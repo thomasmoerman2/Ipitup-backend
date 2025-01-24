@@ -32,7 +32,7 @@ jobs:
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build --configuration Release --output ./output
           popd
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -47,4 +47,4 @@ jobs:
           app-name: 'tmipitup'
           slot-name: 'Production'
           package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-          
+          publish-profile: ${{ secrets.PORTAL_PRODUCTION }}

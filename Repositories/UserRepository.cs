@@ -107,13 +107,14 @@ public class UserRepository : IUserRepository
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, avatar, birthDate) VALUES (@email, @password, @firstname, @lastname, @avatar, @birthdate)", connection);
+            var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, avatar, birthDate, accountStatus) VALUES (@email, @password, @firstname, @lastname, @avatar, @birthdate, @accountStatus)", connection);
             command.Parameters.AddWithValue("@email", user.UserEmail);
             command.Parameters.AddWithValue("@password", user.UserPassword);
             command.Parameters.AddWithValue("@firstname", user.UserFirstname);
             command.Parameters.AddWithValue("@lastname", user.UserLastname);
             command.Parameters.AddWithValue("@avatar", user.Avatar);
             command.Parameters.AddWithValue("@birthdate", user.BirthDate);
+            command.Parameters.AddWithValue("@accountStatus", user.AccountStatus);
             var result = await command.ExecuteNonQueryAsync();
             if (result > 0)
             {

@@ -420,6 +420,7 @@ namespace Ipitup.Functions
             var latestExercises = exercises.Take(3).ToList();
             var isFollowing = false;
             Follow follow = null;
+
             if (userIdFromToken > 0)
             {
                 follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
@@ -428,6 +429,10 @@ namespace Ipitup.Functions
             var achievements = await _badgeService.GetLatestBadgesByUserIdAsync(userId, 8);
             var latestAchievements = achievements.Take(8).ToList();
 
+            if (user.UserId == userId)
+            {
+                return new UnauthorizedObjectResult(new { message = "You cannot request information about yourself" });
+            }
 
             var exercisesObject = latestActivities.Select(a => new
             {
@@ -490,7 +495,7 @@ namespace Ipitup.Functions
                         accountStatus = user.AccountStatus,
                         firstname = user.UserFirstname,
                         lastname = user.UserLastname,
-                        isPending = follow.Status == FollowStatus.Pending
+                        isPending = follow.Status == FollowStatus.Pending ? true : false
                     });
                 }
             }

@@ -259,7 +259,7 @@ namespace Ipitup.Functions
             catch (Exception ex)
             {
                 _logger.LogError($"Error in GetUserTotalScore. ID: '{id}', Error: {ex.Message}", ex);
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                return new StatusCodeResult(StatusCodes.Status200OK);
             }
         }
         [Function("PasswordResetByUserId")]

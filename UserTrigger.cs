@@ -230,16 +230,37 @@ namespace Ipitup.Functions
         public async Task<IActionResult> GetUserTotalScore(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/totalscore/{id}")] HttpRequest req, string id)
         {
-            if (!int.TryParse(id, out int userId))
+            _logger.LogInformation($"GetUserTotalScore function triggered with ID: '{id}'");
+            try
             {
-                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+                if (string.IsNullOrEmpty(id))
+                {
+                    _logger.LogError("ID is null or empty");
+                    return new BadRequestObjectResult(new { message = "ID is required" });
+                }
+
+                int userId = int.Parse(id);
+
+                if (userId <= 0)
+                {
+                    return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+                }
+
+                var user = await _userService.GetUserByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogError($"User not found with ID: {userId}");
+                    return new NotFoundObjectResult(new { message = "User not found" });
+                }
+
+                _logger.LogInformation($"User found with ID: {userId}. Total score: {user.TotalScore}");
+                return new OkObjectResult(new { totalScore = user.TotalScore });
             }
-            var user = await _userService.GetUserByIdAsync(userId);
-            if (user == null)
+            catch (Exception ex)
             {
-                return new NotFoundObjectResult(new { message = "User not found" });
+                _logger.LogError($"Error in GetUserTotalScore. ID: '{id}', Error: {ex.Message}", ex);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
-            return new OkObjectResult(new { totalScore = user.TotalScore });
         }
         [Function("PasswordResetByUserId")]
         public async Task<IActionResult> PasswordResetByUserId(

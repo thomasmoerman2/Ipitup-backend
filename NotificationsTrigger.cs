@@ -17,16 +17,16 @@ namespace Ipitup.Functions
             var authHeader = req.Headers["Authorization"].FirstOrDefault();
             if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
             {
-                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+                return new OkResult();
             }
             var token = authHeader.Substring("Bearer ".Length);
             if (!await _userService.VerifyAuthTokenAsync(token))
             {
-                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                return new OkResult();
             }
             if (!int.TryParse(userId, out int userIdInt))
             {
-                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+                return new OkResult();
             }
             _logger.LogInformation($"Getting notifications for user {userId} with ID {userIdInt}");
             var notifications = await _notificationService.GetNotificationsAsync(userIdInt);

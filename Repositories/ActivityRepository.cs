@@ -48,8 +48,8 @@ public class ActivityRepository : IActivityRepository
         var command = new MySqlCommand("SELECT COUNT(*) FROM Activity WHERE userId = @userId", connection);
         command.Parameters.AddWithValue("@userId", userId);
         command.CommandTimeout = 30;  // Zet een tijdslimiet op de query
-        var result = await command.ExecuteScalarAsync();
-        return result != null ? Convert.ToInt32(result) : 0;
+        var result = await command.ExecuteNonQueryAsync();
+        return result;
     }
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {
@@ -123,7 +123,7 @@ public class ActivityRepository : IActivityRepository
         var activities = new List<Activity>();
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand("SELECT * FROM Activity WHERE userId = @userId ORDER BY activityDate DESC LIMIT 5", connection);
+        var command = new MySqlCommand("SELECT * FROM Activity WHERE userId = @userId ORDER BY activityDate DESC LIMIT 7", connection);
         command.Parameters.AddWithValue("@userId", userId);
         using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())

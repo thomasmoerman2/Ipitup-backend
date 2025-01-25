@@ -423,7 +423,7 @@ namespace Ipitup.Functions
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
 
-            var activities = await _activityService.GetLatestActivityUserByIdAsync(userId) ?? new List<Activity>();
+            var activities = await _activityService.GetLatestActivityUserByIdAsync(userId, 30) ?? new List<Activity>();
             var latestActivities = activities.Take(3).ToList();
             var exerciseIds = latestActivities.Select(a => a.ExerciseId).ToList();
 

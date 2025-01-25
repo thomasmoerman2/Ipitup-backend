@@ -82,13 +82,17 @@ public class ActivityTrigger
 
     [Function("GetActivitiesByUserId")]
     public async Task<IActionResult> GetActivitiesByUserId(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/total/{userId}")] HttpRequest req, string userId)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/total/{userId}/{days}")] HttpRequest req, string userId, string days)
     {
         if (!int.TryParse(userId, out int userid))
         {
             return new BadRequestObjectResult(new { message = "Invalid user ID format. It must be a number." });
         }
-        var activities = await _activityService.GetLatestActivityUserByIdAsync(userid);
+        if (!int.TryParse(days, out int daysInt))
+        {
+            return new BadRequestObjectResult(new { message = "Invalid days format. It must be a number." });
+        }
+        var activities = await _activityService.GetLatestActivityUserByIdAsync(userid, daysInt);
         return new OkObjectResult(new { count = activities.Count, activities = activities });
     }
 
@@ -137,7 +141,8 @@ public class ActivityTrigger
         {
             return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
         }
-        var activity = await _activityService.GetLatestActivityUserByIdAsync(userid);
+
+        var activity = await _activityService.GetLatestActivityUserByIdAsync(userid, 3);
         if (activity == null)
         {
             return new NotFoundObjectResult(new { message = "Activity not found" });

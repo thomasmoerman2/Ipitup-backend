@@ -4,11 +4,14 @@ public class LeaderboardTrigger
     private readonly ILogger<LeaderboardTrigger> _logger;
     private readonly ILeaderboardService _leaderboardService;
     private readonly IActivityRepository _activityRepository;
-    public LeaderboardTrigger(ILogger<LeaderboardTrigger> logger, ILeaderboardService leaderboardService, IActivityRepository activityRepository)
+    private readonly IUserService _userService;
+
+    public LeaderboardTrigger(ILogger<LeaderboardTrigger> logger, ILeaderboardService leaderboardService, IActivityRepository activityRepository, IUserService userService)
     {
         _logger = logger;
         _leaderboardService = leaderboardService;
         _activityRepository = activityRepository;
+        _userService = userService;
     }
     [Function("GetLeaderboardById")]
     public async Task<IActionResult> GetLeaderboardById(
@@ -25,17 +28,46 @@ public class LeaderboardTrigger
         }
         return new OkObjectResult(leaderboard);
     }
-    [Function("GetLeaderboardByLocationId")]
-    public async Task<IActionResult> GetLeaderboardByLocationId(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/location/{locationId}")] HttpRequest req, string locationId)
+
+    [Function("GetLeaderboardByLocationIds")]
+    public async Task<IActionResult> GetLeaderboardByLocationIds(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard/location/{locationIds}/user/{userId}")] HttpRequest req, string locationIds, string userId)
     {
-        if (!int.TryParse(locationId, out int locId))
+        if (!int.TryParse(userId, out int userIdInt))
         {
-            return new BadRequestObjectResult(new { message = "Invalid location ID format. It must be a number." });
+            return new BadRequestObjectResult(new { message = "Invalid user ID format." });
         }
-        var leaderboardEntries = await _leaderboardService.GetLeaderboardByLocationIdAsync(locId);
-        return new OkObjectResult(leaderboardEntries);
+
+        var locationIdList = locationIds.Split(',')
+            .Select(id => int.TryParse(id, out int locId) ? locId : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id.Value)
+            .ToList();
+
+        if (!locationIdList.Any())
+        {
+            return new BadRequestObjectResult(new { message = "Invalid location IDs provided." });
+        }
+
+        var totalLocationScore = await _leaderboardService.GetTotalLocationScoreByUserAsync(userIdInt, locationIdList);
+        var user = await _userService.GetUserByIdAsync(userIdInt);
+
+        if (user == null)
+        {
+            return new NotFoundObjectResult(new { message = "User not found" });
+        }
+
+        return new OkObjectResult(new 
+        { 
+            userId = userIdInt, 
+            firstname = user.UserFirstname, 
+            lastname = user.UserLastname, 
+            totalLocationScore 
+        });
     }
+
+
+
     [Function("GetAllLeaderboardEntries")]
     public async Task<IActionResult> GetAllLeaderboardEntries(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "leaderboard")] HttpRequest req)
@@ -111,4 +143,6 @@ public class LeaderboardTrigger
         }
         return new OkObjectResult(new { leaderboardId });
     }
+
+    
 }

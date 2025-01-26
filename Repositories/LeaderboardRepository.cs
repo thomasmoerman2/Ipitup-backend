@@ -3,12 +3,13 @@ public interface ILeaderboardRepository
 {
     Task<bool> AddLeaderboardEntryAsync(Leaderboard leaderboard);
     Task<Leaderboard?> GetLeaderboardByIdAsync(int leaderboardId);
-    Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId);
     Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync();
     Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore);
     Task<IEnumerable<dynamic>> GetLeaderboardWithFiltersAsync(List<int>? locationIds, int? minAge, int? maxAge, string? sortType, int userId);
     Task<int?> GetLeaderboardIdByUserIdAsync(int userId);
-}
+    Task<int> GetTotalLocationScoreByUserAsync(int userId, List<int> locationIds);
+
+}   
 public class LeaderboardRepository : ILeaderboardRepository
 {
     private readonly string _connectionString;
@@ -49,26 +50,23 @@ public class LeaderboardRepository : ILeaderboardRepository
         }
         return null;
     }
-    public async Task<IEnumerable<Leaderboard>> GetLeaderboardByLocationIdAsync(int locationId)
-    {
-        var leaderboardEntries = new List<Leaderboard>();
-        using var connection = new MySqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var command = new MySqlCommand("SELECT * FROM Leaderboard WHERE locationId = @locationId", connection);
-        command.Parameters.AddWithValue("@locationId", locationId);
-        using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
-        {
-            leaderboardEntries.Add(new Leaderboard
-            {
-                LeaderboardId = reader.GetInt32(reader.GetOrdinal("leaderboardId")),
-                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                LocationId = reader.IsDBNull(reader.GetOrdinal("locationId")) ? null : reader.GetInt32(reader.GetOrdinal("locationId")),
-                Score = reader.GetInt32(reader.GetOrdinal("score"))
-            });
-        }
-        return leaderboardEntries;
-    }
+    public async Task<int> GetTotalLocationScoreByUserAsync(int userId, List<int> locationIds)
+{
+    using var connection = new MySqlConnection(_connectionString);
+    await connection.OpenAsync();
+    
+    var query = $@"
+        SELECT SUM(score) AS totalLocationScore
+        FROM Leaderboard
+        WHERE userId = @userId AND locationId IN ({string.Join(",", locationIds)})";
+
+    using var command = new MySqlCommand(query, connection);
+    command.Parameters.AddWithValue("@userId", userId);
+
+    var result = await command.ExecuteScalarAsync();
+    return result != DBNull.Value ? Convert.ToInt32(result) : 0;
+}
+
     public async Task<IEnumerable<Leaderboard>> GetAllLeaderboardEntriesAsync()
     {
         var leaderboardEntries = new List<Leaderboard>();
@@ -88,6 +86,7 @@ public class LeaderboardRepository : ILeaderboardRepository
         }
         return leaderboardEntries;
     }
+
     public async Task<bool> UpdateLeaderboardScoreAsync(int userId, int locationId, int activityScore)
     {
         using var connection = new MySqlConnection(_connectionString);

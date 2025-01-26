@@ -2,8 +2,8 @@ namespace Ipitup.Services;
 public interface INotificationService
 {
     Task<List<Notifications>> GetNotificationsAsync(int userId);
-    Task UpdateNotificationsAsReadAsync(int userId, List<int> notificationsIds);
-    Task AddNotificationAsync(Notifications notification);
+    Task UpdateNotificationsAsReadAsync(int userId);
+    Task AddAsync(Notifications notification);
 }
 public class NotificationsService : INotificationService
 {
@@ -16,12 +16,12 @@ public class NotificationsService : INotificationService
     {
         return await _notificationsRepository.GetNotificationsAsync(userId);
     }
-    public async Task UpdateNotificationsAsReadAsync(int userId, List<int> notificationsIds)
+    public async Task UpdateNotificationsAsReadAsync(int userId)
     {
-        await _notificationsRepository.UpdateNotificationsAsReadAsync(userId, notificationsIds);
+        await _notificationsRepository.UpdateNotificationsAsReadAsync(userId);
     }
-    public async Task AddNotificationAsync(Notifications notification)
+    public async Task AddAsync(Notifications notification)
     {
-        await _notificationsRepository.AddNotificationAsync(notification);
+        await _notificationsRepository.AddAsync(notification);
     }
 }

@@ -4,11 +4,13 @@ public class FollowTrigger
     private readonly ILogger<FollowTrigger> _logger;
     private readonly IFollowService _followService;
     private readonly IUserService _userService;
-    public FollowTrigger(ILogger<FollowTrigger> logger, IFollowService followService, IUserService userService)
+    private readonly INotificationService _notificationService;
+    public FollowTrigger(ILogger<FollowTrigger> logger, IFollowService followService, IUserService userService, INotificationService notificationService)
     {
         _logger = logger;
         _followService = followService;
         _userService = userService;
+        _notificationService = notificationService;
     }
     [Function("FollowUser")]
     public async Task<IActionResult> FollowUser(
@@ -21,6 +23,32 @@ public class FollowTrigger
             return new BadRequestObjectResult(new { message = "Invalid request data" });
         }
         var result = await _followService.FollowUserAsync(follow);
+        User? user = null;
+        if (result)
+        {
+            user = await _userService.GetUserByIdAsync(follow.FollowerId);
+        }
+        if (follow.Status == FollowStatus.Pending)
+        {
+            await _notificationService.AddAsync(new Notifications
+            {
+                UserId = follow.FollowingId,
+                Message = $"{user?.UserFirstname} {user?.UserLastname} vraagt om jou te volgen",
+                IsRead = false,
+                Type = NotificationType.FriendRequest
+            });
+        }
+        else if (result)
+        {
+            await _notificationService.AddAsync(new Notifications
+            {
+                UserId = follow.FollowingId,
+                Message = $"{user?.UserFirstname} {user?.UserLastname} volgt je nu",
+                IsRead = false,
+                Type = NotificationType.FriendRequest
+            });
+        }
+
         return result ? new OkObjectResult(new { message = "Follow request sent" }) : new BadRequestObjectResult(new { message = "Failed to follow user" });
     }
     [Function("GetFollowers")]
@@ -65,6 +93,7 @@ public class FollowTrigger
         var following = await _followService.GetFollowingAsync(userIdInt);
         return new OkObjectResult(new { following = following });
     }
+
     [Function("AcceptFollowRequest")]
     public async Task<IActionResult> AcceptFollowRequest(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "follow/accept")] HttpRequest req)
@@ -78,6 +107,7 @@ public class FollowTrigger
         var result = await _followService.AcceptFollowRequestAsync(follow.FollowerId, follow.FollowingId);
         return result ? new OkObjectResult(new { message = "Follow request accepted" }) : new BadRequestObjectResult(new { message = "Failed to accept follow request" });
     }
+
     [Function("UnfollowUser")]
     public async Task<IActionResult> UnfollowUser(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "unfollow")] HttpRequest req)

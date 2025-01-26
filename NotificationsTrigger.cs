@@ -64,22 +64,8 @@ namespace Ipitup.Functions
                     return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
                 }
 
-                _logger.LogInformation($"Reading request body for user {userIdInt}");
-                var notificationsIds = await new StreamReader(req.Body).ReadToEndAsync();
-                _logger.LogInformation($"Received notifications payload: {notificationsIds}");
-
-                var notificationsIdsList = JsonConvert.DeserializeObject<List<int>>(notificationsIds);
-
-                _logger.LogInformation($"Notifications IDs list: {notificationsIdsList.Count}");
-
-                if (notificationsIdsList == null)
-                {
-                    _logger.LogInformation("No notifications IDs provided in request");
-                    return new OkResult();
-                }
-
-                _logger.LogInformation($"Updating {notificationsIdsList.Count} notifications as read for user {userIdInt}");
-                await _notificationService.UpdateNotificationsAsReadAsync(userIdInt, notificationsIdsList);
+                _logger.LogInformation($"Updating notifications as read for user {userIdInt}");
+                await _notificationService.UpdateNotificationsAsReadAsync(userIdInt);
                 _logger.LogInformation("Successfully updated notifications as read");
 
                 return new OkResult();
@@ -116,7 +102,7 @@ namespace Ipitup.Functions
                 return new BadRequestObjectResult(new { message = "Invalid notification format" });
             }
             notificationObject.UserId = userIdInt;
-            await _notificationService.AddNotificationAsync(notificationObject);
+            await _notificationService.AddAsync(notificationObject);
             return new OkResult();
         }
     }

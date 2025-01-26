@@ -608,7 +608,8 @@ namespace Ipitup.Functions
                     id = user.UserId,
                     firstname = user.UserFirstname,
                     lastname = user.UserLastname,
-                    avatar = user.Avatar
+                    avatar = user.Avatar,
+                    isFollowing = follower.Status == FollowStatus.Accepted
                 });
             }
             return new OkObjectResult(formattedFollowers);

@@ -127,7 +127,6 @@ namespace Ipitup.Functions
                 }
                 if (userRequest.UserEmail == "" || userRequest.UserPassword == "" || userRequest.UserFirstname == "" || userRequest.UserLastname == "" || userRequest.BirthDate == DateTime.MinValue)
                 {
-                    _logger.LogError($"Invalid request body: UserEmail={userRequest.UserEmail}, UserPassword={userRequest.UserPassword}, UserFirstname={userRequest.UserFirstname}, UserLastname={userRequest.UserLastname}, BirthDate={userRequest.BirthDate}. One or more of these values are empty or invalid.");
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
                 }
                 var emailExists = await _userService.CheckEmailAlreadyExists(userRequest.UserEmail);
@@ -147,6 +146,10 @@ namespace Ipitup.Functions
                     {
                         return new BadRequestObjectResult(new { message = "Failed to create auth token" });
                     }
+
+
+                    // log the user data
+                    _logger.LogInformation($"User created: {user.UserId}, {user.UserFirstname}, {user.UserLastname}, {user.UserEmail}, {user.Avatar}, {user.BirthDate}, {user.AccountStatus}, {user.DailyStreak}, {user.TotalScore}");
 
                     return new OkObjectResult(new
                     {

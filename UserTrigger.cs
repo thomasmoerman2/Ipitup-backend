@@ -1,5 +1,5 @@
 namespace Ipitup.Functions
-{
+{   
     public class UserTrigger
     {
         private readonly ILogger<UserTrigger> _logger;
@@ -227,7 +227,7 @@ namespace Ipitup.Functions
                     lastname = u.UserLastname,
                     avatar = u.Avatar,
                     dailyStreak = u.DailyStreak,
-                    totalScore = u.TotalScore
+                    totalScore = u.TotalScore,
                 })
             });
         }
@@ -636,31 +636,53 @@ namespace Ipitup.Functions
 
         [Function("DeleteUserAccount")]
         public async Task<IActionResult> DeleteUserAccount(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "user/delete")] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/delete")] HttpRequest req)
         {
             try
             {
-                string? authHeader = req.Headers["Authorization"].FirstOrDefault();
+                // Verkrijg het huidige wachtwoord van de request
+                var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var request = JsonConvert.DeserializeObject<DeleteAccountRequest>(requestBody);
+                if (request == null || string.IsNullOrEmpty(request.CurrentPassword))
+                {
+                    return new BadRequestObjectResult(new { message = "Huidig wachtwoord is vereist" });
+                }
+
+                var authHeader = req.Headers["Authorization"].FirstOrDefault();
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                 {
-                    return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+                    return new UnauthorizedObjectResult(new { message = "Ongeldige autorisatie header" });
                 }
 
-                string token = authHeader.Substring("Bearer ".Length);
-                int userId = await _userService.GetUserIdFromTokenAsync(token);
-
+                var token = authHeader.Substring("Bearer ".Length);
+                var userId = await _userService.GetUserIdFromTokenAsync(token);
                 if (userId == 0)
                 {
-                    return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                    return new UnauthorizedObjectResult(new { message = "Ongeldige of verlopen token" });
                 }
 
+                // Haal het opgeslagen wachtwoord op via een eigen query in de repository
+                var storedHashedPassword = await _userService.GetUserPasswordByIdAsync(userId);
+                if (storedHashedPassword == null)
+                {
+                    return new BadRequestObjectResult(new { message = "Gebruikerswachtwoord niet gevonden" });
+                }
+
+                // Verifieer het huidige wachtwoord
+                bool passwordIsValid = BCrypt.Net.BCrypt.Verify(request.CurrentPassword, storedHashedPassword);
+                if (!passwordIsValid)
+                {
+                    return new BadRequestObjectResult(new { message = "Huidig wachtwoord is incorrect" });
+                }
+
+                // Verwijder het account
                 bool isDeleted = await _userService.DeleteUserAccountAsync(userId);
                 if (!isDeleted)
                 {
-                    return new BadRequestObjectResult(new { message = "Failed to delete user account" });
+                    return new BadRequestObjectResult(new { message = "Fout bij verwijderen van account" });
                 }
 
-                return new OkObjectResult(new { message = "Account successfully deleted" });
+                return new OkObjectResult(new { message = "Account succesvol verwijderd" });
             }
             catch (Exception ex)
             {
@@ -668,6 +690,57 @@ namespace Ipitup.Functions
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
+
+
+
+        public class DeleteAccountRequest
+        {
+            public string CurrentPassword { get; set; } = string.Empty;
+        }
+
+
+        [Function("UpdatePassword")]
+        public async Task<IActionResult> UpdatePassword(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/password/update")] HttpRequest req)
+        {
+            try
+            {
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var request = JsonConvert.DeserializeObject<PasswordUpdateRequest>(requestBody);
+
+                if (request == null || string.IsNullOrEmpty(request.CurrentPassword) || string.IsNullOrEmpty(request.NewPassword))
+                {
+                    return new BadRequestObjectResult(new { message = "Current and new password are required" });
+                }
+
+                int userId = await _userService.GetUserIdFromTokenAsync(req.Headers["Authorization"].ToString().Substring("Bearer ".Length));
+                if (userId == 0)
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                }
+
+                var isUpdated = await _userService.UpdatePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+                if (!isUpdated)
+                {
+                    return new BadRequestObjectResult(new { message = "Current password is incorrect" });
+                }
+
+                // Wachtwoord is succesvol bijgewerkt
+                return new OkObjectResult(new { message = "Password updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating password");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public class PasswordUpdateRequest
+        {
+            public string CurrentPassword { get; set; } = string.Empty;
+            public string NewPassword { get; set; } = string.Empty;
+        }
+
 
     }
 }

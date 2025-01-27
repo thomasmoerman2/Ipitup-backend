@@ -181,6 +181,8 @@ namespace Ipitup.Functions
                 return new BadRequestObjectResult(new { message = "Error processing request", error = ex.Message });
             }
         }
+
+
         [Function("GetUserById")]
         public async Task<IActionResult> GetUserById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}")] HttpRequest req, string id)
@@ -401,17 +403,28 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User updated successfully" });
         }
+
+
         [Function("GetUserAvatar")]
         public async Task<IActionResult> GetUserAvatar(
-                 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/avatar/{id}")] HttpRequest req, string id)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/avatar/{id}")] HttpRequest req, string id)
         {
             if (!int.TryParse(id, out int userId))
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-            var avatar = await _userService.GetUserAvatarAsync(userId);
-            return new OkObjectResult(new { avatar });
+
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.Avatar))
+            {
+                return new NotFoundObjectResult(new { message = "User or avatar not found" });
+            }
+
+            return new OkObjectResult(new { avatar = user.Avatar });
         }
+        
+
+        
         [Function("GetUserByIdLimited")]
         public async Task<IActionResult> GetUserByIdLimited(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/info/{id}")] HttpRequest req, string id)

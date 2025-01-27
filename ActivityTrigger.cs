@@ -82,19 +82,27 @@ public class ActivityTrigger
 
     [Function("GetActivitiesByUserId")]
     public async Task<IActionResult> GetActivitiesByUserId(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/total/{userId}/{days}")] HttpRequest req, string userId, string days)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/total/{userId}/{days?}")] HttpRequest req, 
+        string userId, 
+        string? days)
     {
         if (!int.TryParse(userId, out int userid))
         {
             return new BadRequestObjectResult(new { message = "Invalid user ID format. It must be a number." });
         }
-        if (!int.TryParse(days, out int daysInt))
+
+        int daysInt;
+        if (string.IsNullOrEmpty(days) || !int.TryParse(days, out daysInt))
         {
-            return new BadRequestObjectResult(new { message = "Invalid days format. It must be a number." });
+            // Als 'days' niet is meegegeven of niet een geldig getal is, haal alle activiteiten op.
+            var allActivities = await _activityService.GetLatestActivityUserByIdAsync(userid, int.MaxValue);
+            return new OkObjectResult(new { count = allActivities.Count, activities = allActivities });
         }
+
         var activities = await _activityService.GetLatestActivityUserByIdAsync(userid, daysInt);
         return new OkObjectResult(new { count = activities.Count, activities = activities });
     }
+
 
     [Function("GetAllActivities")]
     public async Task<IActionResult> GetAllActivities(

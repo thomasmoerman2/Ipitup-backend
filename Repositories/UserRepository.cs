@@ -20,6 +20,10 @@ public interface IUserRepository
     Task<bool> UpdateUserAsync(int userId, User user);
     Task<int> GetUserIdFromTokenAsync(string token);
     Task<string?> GetUserAvatarAsync(int userId);
+    Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus);
+    Task<bool> DeleteUserAccountAsync(int userId);
+
+
 }
 public class UserRepository : IUserRepository
 {
@@ -106,15 +110,18 @@ public class UserRepository : IUserRepository
         user.UserPassword = BCrypt.Net.BCrypt.HashPassword(user.UserPassword);
         using (var connection = new MySqlConnection(_connectionString))
         {
+            //log the user data
+            Console.WriteLine($"Processing user: {user.UserEmail}, {user.UserFirstname}, {user.UserLastname}, {user.BirthDate}, {user.AccountStatus}, {user.DailyStreak}, {user.TotalScore}");
             await connection.OpenAsync();
-            var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, avatar, birthDate, accountStatus) VALUES (@email, @password, @firstname, @lastname, @avatar, @birthdate, @accountStatus)", connection);
-            command.Parameters.AddWithValue("@email", user.UserEmail);
+            var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, birthDate, accountStatus, dailyStreak, totalScore) VALUES (@email, @password, @firstname, @lastname, @birthdate, @accountStatus, @dailyStreak, @totalScore)", connection);
+            command.Parameters.AddWithValue("@email", user.UserEmail.ToLower());
             command.Parameters.AddWithValue("@password", user.UserPassword);
             command.Parameters.AddWithValue("@firstname", user.UserFirstname);
             command.Parameters.AddWithValue("@lastname", user.UserLastname);
-            command.Parameters.AddWithValue("@avatar", user.Avatar);
             command.Parameters.AddWithValue("@birthdate", user.BirthDate);
-            command.Parameters.AddWithValue("@accountStatus", user.AccountStatus);
+            command.Parameters.AddWithValue("@accountStatus", user.AccountStatus == AccountStatus.Public ? "Public" : "Private");
+            command.Parameters.AddWithValue("@dailyStreak", user.DailyStreak);
+            command.Parameters.AddWithValue("@totalScore", user.TotalScore);
             var result = await command.ExecuteNonQueryAsync();
             if (result > 0)
             {
@@ -198,12 +205,12 @@ public class UserRepository : IUserRepository
                 var command = new MySqlCommand();
                 if (lastname == "")
                 {
-                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND accountStatus = 'Public'", connection);
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname", connection);
                     command.Parameters.AddWithValue("@firstname", "%" + firstname + "%");
                 }
                 else
                 {
-                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND userLastname LIKE @lastname AND accountStatus = 'Public'", connection);
+                    command = new MySqlCommand("SELECT * FROM User WHERE userFirstname LIKE @firstname AND userLastname LIKE @lastname", connection);
                     command.Parameters.AddWithValue("@firstname", "%" + firstname + "%");
                     command.Parameters.AddWithValue("@lastname", "%" + lastname + "%");
                 }
@@ -392,50 +399,102 @@ public class UserRepository : IUserRepository
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var command = new MySqlCommand("UPDATE `User` SET userFirstname=@userFirstname,userLastname=@userLastname, userEmail=@userEmail, birthDate=@birthDate WHERE userId=@userId", connection);
+            var command = new MySqlCommand("UPDATE User SET userFirstname=@userFirstname,userLastname=@userLastname, userEmail=@userEmail WHERE userId=@userId", connection);
+            command.Parameters.AddWithValue("@userId", userId);
             command.Parameters.AddWithValue("@userFirstname", user.UserFirstname);
             command.Parameters.AddWithValue("@userLastname", user.UserLastname);
-            command.Parameters.AddWithValue("@userEmail", user.UserEmail);
-            command.Parameters.AddWithValue("@birthDate", user.BirthDate);
-            command.Parameters.AddWithValue("@userId", userId);
-            return await command.ExecuteNonQueryAsync() > 0;
+            command.Parameters.AddWithValue("@userEmail", user.UserEmail.ToLower());
+            var result = await command.ExecuteNonQueryAsync();
+            if (result > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
     public async Task<int> GetUserIdFromTokenAsync(string token)
     {
-        Console.WriteLine("\n=== GetUserIdFromTokenAsync Start ===");
-        Console.WriteLine($"Attempting to get userId for token: {token}");
         using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
                 await connection.OpenAsync();
-                Console.WriteLine("Database connection opened successfully");
                 var command = new MySqlCommand("SELECT userId FROM AuthToken WHERE token = @token", connection);
                 command.Parameters.AddWithValue("@token", token);
-                Console.WriteLine("Executing SQL query to fetch userId");
                 var result = await command.ExecuteScalarAsync();
-                Console.WriteLine($"Query result: {result ?? "null"}");
                 if (result != null && int.TryParse(result.ToString(), out int userId))
                 {
-                    Console.WriteLine($"Parse success: true, UserId: {userId}");
-                    Console.WriteLine("=== GetUserIdFromTokenAsync End ===\n");
                     return userId;
                 }
                 else
                 {
-                    Console.WriteLine("Parse success: false, UserId: 0");
-                    Console.WriteLine("=== GetUserIdFromTokenAsync End ===\n");
                     return 0;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetUserIdFromTokenAsync: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                Console.WriteLine("=== GetUserIdFromTokenAsync End with Error ===\n");
+                Console.WriteLine($"Error in GetUserIdFromTokenAsync");
                 return 0;
             }
         }
     }
+    public async Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("UPDATE User SET accountStatus = @status WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@status", accountStatus.ToString());
+            command.Parameters.AddWithValue("@userId", userId);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+    }
+
+    public async Task<bool> DeleteUserAccountAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            using (var transaction = await connection.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Verwijder records uit AuthToken tabel
+                    var deleteTokensCommand = new MySqlCommand(
+                        "DELETE FROM AuthToken WHERE userId = @userId", connection, (MySqlTransaction)transaction);
+                    deleteTokensCommand.Parameters.AddWithValue("@userId", userId);
+                    await deleteTokensCommand.ExecuteNonQueryAsync();
+
+                    // Controleer of er nog andere gerelateerde tabellen zijn (bijv. activiteiten, badges, etc.)
+                    var deleteActivitiesCommand = new MySqlCommand(
+                        "DELETE FROM Activity WHERE userId = @userId", connection, (MySqlTransaction)transaction);
+                    deleteActivitiesCommand.Parameters.AddWithValue("@userId", userId);
+                    await deleteActivitiesCommand.ExecuteNonQueryAsync();
+
+                    // Voeg indien nodig andere DELETE statements toe voor tabellen met een foreign key
+
+                    // Verwijder de gebruiker zelf
+                    var deleteUserCommand = new MySqlCommand(
+                        "DELETE FROM User WHERE userId = @userId", connection, (MySqlTransaction)transaction);
+                    deleteUserCommand.Parameters.AddWithValue("@userId", userId);
+                    var rowsAffected = await deleteUserCommand.ExecuteNonQueryAsync();
+
+                    await transaction.CommitAsync();
+
+                    return rowsAffected > 0;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw new Exception($"Fout bij verwijderen van gebruiker: {ex.Message}", ex);
+                }
+            }
+        }
+    }
+
+
+
 }

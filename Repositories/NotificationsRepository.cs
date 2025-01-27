@@ -2,8 +2,8 @@ namespace Ipitup.Repositories;
 public interface INotificationsRepository
 {
     Task<List<Notifications>> GetNotificationsAsync(int userId);
-    Task UpdateNotificationsAsReadAsync(int userId, List<int> notificationsIds);
-    Task AddNotificationAsync(Notifications notification);
+    Task UpdateNotificationsAsReadAsync(int userId);
+    Task AddAsync(Notifications notification);
 }
 public class NotificationsRepository : INotificationsRepository
 {
@@ -39,20 +39,15 @@ public class NotificationsRepository : INotificationsRepository
         }
         return notifications;
     }
-    public async Task UpdateNotificationsAsReadAsync(int userId, List<int> notificationsIds)
+    public async Task UpdateNotificationsAsReadAsync(int userId)
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         var command = new MySqlCommand("UPDATE Notifications SET isRead = 1 WHERE userId = @userId", connection);
         command.Parameters.AddWithValue("@userId", userId);
-        for (int i = 0; i < notificationsIds.Count; i++)
-        {
-            command.CommandText += $" AND notificationId = @notificationId{i}";
-            command.Parameters.AddWithValue($"@notificationId{i}", notificationsIds[i]);
-        }
         await command.ExecuteNonQueryAsync();
     }
-    public async Task AddNotificationAsync(Notifications notification)
+    public async Task AddAsync(Notifications notification)
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();

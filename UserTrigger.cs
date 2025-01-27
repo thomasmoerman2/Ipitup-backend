@@ -127,7 +127,6 @@ namespace Ipitup.Functions
                 }
                 if (userRequest.UserEmail == "" || userRequest.UserPassword == "" || userRequest.UserFirstname == "" || userRequest.UserLastname == "" || userRequest.BirthDate == DateTime.MinValue)
                 {
-                    _logger.LogError($"Invalid request body: UserEmail={userRequest.UserEmail}, UserPassword={userRequest.UserPassword}, UserFirstname={userRequest.UserFirstname}, UserLastname={userRequest.UserLastname}, BirthDate={userRequest.BirthDate}. One or more of these values are empty or invalid.");
                     return new BadRequestObjectResult(new { message = "Invalid request body" });
                 }
                 var emailExists = await _userService.CheckEmailAlreadyExists(userRequest.UserEmail);
@@ -147,6 +146,10 @@ namespace Ipitup.Functions
                     {
                         return new BadRequestObjectResult(new { message = "Failed to create auth token" });
                     }
+
+
+                    // log the user data
+                    _logger.LogInformation($"User created: {user.UserId}, {user.UserFirstname}, {user.UserLastname}, {user.UserEmail}, {user.Avatar}, {user.BirthDate}, {user.AccountStatus}, {user.DailyStreak}, {user.TotalScore}");
 
                     return new OkObjectResult(new
                     {
@@ -178,6 +181,8 @@ namespace Ipitup.Functions
                 return new BadRequestObjectResult(new { message = "Error processing request", error = ex.Message });
             }
         }
+
+
         [Function("GetUserById")]
         public async Task<IActionResult> GetUserById(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}")] HttpRequest req, string id)
@@ -230,16 +235,37 @@ namespace Ipitup.Functions
         public async Task<IActionResult> GetUserTotalScore(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/totalscore/{id}")] HttpRequest req, string id)
         {
-            if (!int.TryParse(id, out int userId))
+            _logger.LogInformation($"GetUserTotalScore function triggered with ID: '{id}'");
+            try
             {
-                return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+                if (string.IsNullOrEmpty(id))
+                {
+                    _logger.LogError("ID is null or empty");
+                    return new BadRequestObjectResult(new { message = "ID is required" });
+                }
+
+                int userId = int.Parse(id);
+
+                if (userId <= 0)
+                {
+                    return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
+                }
+
+                var user = await _userService.GetUserByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogError($"User not found with ID: {userId}");
+                    return new NotFoundObjectResult(new { message = "User not found" });
+                }
+
+                _logger.LogInformation($"User found with ID: {userId}. Total score: {user.TotalScore}");
+                return new OkObjectResult(new { totalScore = user.TotalScore });
             }
-            var user = await _userService.GetUserByIdAsync(userId);
-            if (user == null)
+            catch (Exception ex)
             {
-                return new NotFoundObjectResult(new { message = "User not found" });
+                _logger.LogError($"Error in GetUserTotalScore. ID: '{id}', Error: {ex.Message}", ex);
+                return new StatusCodeResult(StatusCodes.Status200OK);
             }
-            return new OkObjectResult(new { totalScore = user.TotalScore });
         }
         [Function("PasswordResetByUserId")]
         public async Task<IActionResult> PasswordResetByUserId(
@@ -369,6 +395,7 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid JSON format" });
             }
+
             var result = await _userService.UpdateUserAsync(userId, userRequest);
             if (!result)
             {
@@ -376,17 +403,28 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(new { message = "User updated successfully" });
         }
+
+
         [Function("GetUserAvatar")]
         public async Task<IActionResult> GetUserAvatar(
-                 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/avatar/{id}")] HttpRequest req, string id)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/avatar/{id}")] HttpRequest req, string id)
         {
             if (!int.TryParse(id, out int userId))
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-            var avatar = await _userService.GetUserAvatarAsync(userId);
-            return new OkObjectResult(new { avatar });
+
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.Avatar))
+            {
+                return new NotFoundObjectResult(new { message = "User or avatar not found" });
+            }
+
+            return new OkObjectResult(new { avatar = user.Avatar });
         }
+        
+
+        
         [Function("GetUserByIdLimited")]
         public async Task<IActionResult> GetUserByIdLimited(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/info/{id}")] HttpRequest req, string id)
@@ -395,44 +433,34 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number." });
             }
-            //get user id from token (token not required)
-            var authHeader = req.Headers["Authorization"].FirstOrDefault();
-            //output authHeader
-            var userIdFromToken = 0;
-            if (authHeader != null && authHeader.StartsWith("Bearer "))
-            {
-                var token = authHeader.Substring("Bearer ".Length);
-                userIdFromToken = await _userService.GetUserIdFromTokenAsync(token);
-            }
-            else
-            {
-            }
+
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return new NotFoundObjectResult(new { message = "User not found" });
             }
-            //get latest 3 activities
-            var activities = await _activityService.GetLatestActivityUserByIdAsync(userId);
+
+            var activities = await _activityService.GetLatestActivityUserByIdAsync(userId, 30) ?? new List<Activity>();
             var latestActivities = activities.Take(3).ToList();
             var exerciseIds = latestActivities.Select(a => a.ExerciseId).ToList();
-            var exercises = await _exerciseService.GetExercisesByIdsAsync(exerciseIds);
+
+            var exercises = await _exerciseService.GetExercisesByIdsAsync(exerciseIds) ?? new List<Exercise>();
             var latestExercises = exercises.Take(3).ToList();
-            var isFollowing = false;
-            Follow follow = null;
 
-            if (userIdFromToken > 0)
+            Follow? follow = null;
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
             {
-                follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
+                var token = authHeader.Substring("Bearer ".Length);
+                var userIdFromToken = await _userService.GetUserIdFromTokenAsync(token);
+                if (userIdFromToken > 0)
+                {
+                    follow = await _followService.CheckIfUserIsFollowingAsync(userIdFromToken, userId);
+                }
             }
-            //get latest 3 achievements
-            var achievements = await _badgeService.GetLatestBadgesByUserIdAsync(userId, 8);
+
+            var achievements = await _badgeService.GetLatestBadgesByUserIdAsync(userId, 8) ?? new List<Badge>();
             var latestAchievements = achievements.Take(8).ToList();
-
-            if (user.UserId == userId)
-            {
-                return new UnauthorizedObjectResult(new { message = "You cannot request information about yourself" });
-            }
 
             var exercisesObject = latestActivities.Select(a => new
             {
@@ -442,7 +470,6 @@ namespace Ipitup.Functions
                 score = a.ActivityScore
             }).ToList();
 
-
             var achievementsObject = latestAchievements.Select(a => new
             {
                 id = a.BadgeId,
@@ -450,56 +477,94 @@ namespace Ipitup.Functions
                 description = a.BadgeDescription,
                 amount = a.BadgeAmount
             }).ToList();
+
             if (follow != null && follow.Status == FollowStatus.Accepted)
             {
                 return new OkObjectResult(new
                 {
                     userId = user.UserId,
-                    isFollowing = follow.Status == FollowStatus.Accepted ? true : false,
+                    isFollowing = true,
                     firstname = user.UserFirstname,
                     lastname = user.UserLastname,
                     avatar = user.Avatar,
                     exercises = exercisesObject,
                     accountStatus = user.AccountStatus,
                     achievements = achievementsObject,
-                    leaderboard = new
-                    {
-                        score = user.TotalScore
-                    }
+                    leaderboard = new { score = user.TotalScore }
+                });
+            }
+            else if (user.AccountStatus == AccountStatus.Public)
+            {
+                return new OkObjectResult(new
+                {
+                    userId = user.UserId,
+                    isFollowing = follow?.Status == FollowStatus.Accepted,
+                    firstname = user.UserFirstname,
+                    lastname = user.UserLastname,
+                    avatar = user.Avatar,
+                    exercises = exercisesObject,
+                    accountStatus = user.AccountStatus,
+                    achievements = achievementsObject,
+                    leaderboard = new { score = user.TotalScore }
                 });
             }
             else
             {
-                if (user.AccountStatus == 0)
+                return new OkObjectResult(new
                 {
-                    return new OkObjectResult(new
-                    {
-                        userId = user.UserId,
-                        isFollowing = follow != null && follow.Status == FollowStatus.Accepted ? true : false,
-                        firstname = user.UserFirstname,
-                        lastname = user.UserLastname,
-                        avatar = user.Avatar,
-                        exercises = exercisesObject,
-                        accountStatus = user.AccountStatus,
-                        achievements = achievementsObject,
-                        leaderboard = new
-                        {
-                            score = user.TotalScore
-                        }
-                    });
-                }
-                else
-                {
-                    return new OkObjectResult(new
-                    {
-                        accountStatus = user.AccountStatus,
-                        firstname = user.UserFirstname,
-                        lastname = user.UserLastname,
-                        isPending = follow.Status == FollowStatus.Pending ? true : false
-                    });
-                }
+                    userId = user.UserId,
+                    accountStatus = user.AccountStatus,
+                    firstname = user.UserFirstname,
+                    lastname = user.UserLastname,
+                    avatar = user.Avatar ?? string.Empty,
+                    dailyStreak = user.DailyStreak, 
+                    isPending = follow?.Status == FollowStatus.Pending
+                });
             }
         }
+
+
+
+        [Function("UpdateAccountStatus")]
+        public async Task<IActionResult> UpdateAccountStatus(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/accountstatus")] HttpRequest req)
+        {
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+            }
+
+            var token = authHeader.Substring("Bearer ".Length);
+            var userId = await _userService.GetUserIdFromTokenAsync(token);
+            if (userId == 0)
+            {
+                return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+            }
+
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var request = JsonConvert.DeserializeObject<Dictionary<string, string>>(requestBody);
+
+            if (request == null || !request.ContainsKey("accountStatus"))
+            {
+                return new BadRequestObjectResult(new { message = "Invalid JSON format" });
+            }
+
+            var newStatus = Enum.TryParse<AccountStatus>(request["accountStatus"], out var accountStatus)
+                ? accountStatus
+                : AccountStatus.Private;
+
+            var result = await _userService.UpdateUserAccountStatusAsync(userId, newStatus);
+
+            if (!result)
+            {
+                return new BadRequestObjectResult(new { message = "Failed to update account status" });
+            }
+
+            return new OkObjectResult(new { message = "Account status updated successfully", status = newStatus });
+        }
+
+
         [Function("GetListOfFollowingByUserId")]
         public async Task<IActionResult> GetListOfFollowingByUserId(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/{id}/following")] HttpRequest req, string id)
@@ -561,10 +626,48 @@ namespace Ipitup.Functions
                     id = user.UserId,
                     firstname = user.UserFirstname,
                     lastname = user.UserLastname,
-                    avatar = user.Avatar
+                    avatar = user.Avatar,
+                    isFollowing = follower.Status == FollowStatus.Accepted
                 });
             }
             return new OkObjectResult(formattedFollowers);
         }
+
+
+        [Function("DeleteUserAccount")]
+        public async Task<IActionResult> DeleteUserAccount(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "user/delete")] HttpRequest req)
+        {
+            try
+            {
+                string? authHeader = req.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+                }
+
+                string token = authHeader.Substring("Bearer ".Length);
+                int userId = await _userService.GetUserIdFromTokenAsync(token);
+
+                if (userId == 0)
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                }
+
+                bool isDeleted = await _userService.DeleteUserAccountAsync(userId);
+                if (!isDeleted)
+                {
+                    return new BadRequestObjectResult(new { message = "Failed to delete user account" });
+                }
+
+                return new OkObjectResult(new { message = "Account successfully deleted" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting user account");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
     }
 }

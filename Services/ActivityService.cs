@@ -6,7 +6,7 @@ public interface IActivityService
     Task<IEnumerable<Activity>> GetAllActivitiesAsync();
     Task<Activity?> GetActivityByIdAsync(int id);
     Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
-    Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
+    Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId, int days);
     Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
     Task<int> GetActivityCountByUserIdAsync(int userId);
 }
@@ -68,9 +68,9 @@ public class ActivityService : IActivityService
         }
         return await _activityRepository.GetActivitiesByLocationIdAsync(locationId);
     }
-    public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId)
+    public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId, int days)
     {
-        return await _activityRepository.GetLatestActivityUserByIdAsync(userId);
+        return await _activityRepository.GetLatestActivityUserByIdAsync(userId, days);
     }
     public async Task<bool> DeleteActivityAsync(int id)
     {

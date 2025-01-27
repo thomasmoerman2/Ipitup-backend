@@ -5,7 +5,7 @@ public interface IActivityRepository
     Task<IEnumerable<Activity>> GetAllActivitiesAsync();
     Task<Activity?> GetActivityByIdAsync(int id);
     Task<IEnumerable<Activity>> GetActivitiesByLocationIdAsync(int locationId);
-    Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId);
+    Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId, int days);
     Task<bool> DeleteActivityAsync(int id);
     Task<bool> UpdateActivityByIdAsync(int id, Activity activity);
     Task<int> GetActivityCountByUserIdAsync(int userId);
@@ -48,8 +48,8 @@ public class ActivityRepository : IActivityRepository
         var command = new MySqlCommand("SELECT COUNT(*) FROM Activity WHERE userId = @userId", connection);
         command.Parameters.AddWithValue("@userId", userId);
         command.CommandTimeout = 30;  // Zet een tijdslimiet op de query
-        var result = await command.ExecuteScalarAsync();
-        return result != null ? Convert.ToInt32(result) : 0;
+        var result = await command.ExecuteNonQueryAsync();
+        return result;
     }
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {
@@ -118,13 +118,14 @@ public class ActivityRepository : IActivityRepository
         }
         return activities;
     }
-    public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId)
+    public async Task<List<Activity>> GetLatestActivityUserByIdAsync(int userId, int days)
     {
         var activities = new List<Activity>();
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
-        var command = new MySqlCommand("SELECT * FROM Activity WHERE userId = @userId ORDER BY activityDate DESC LIMIT 5", connection);
+        var command = new MySqlCommand("SELECT * FROM Activity WHERE userId = @userId ORDER BY activityDate DESC LIMIT @days", connection);
         command.Parameters.AddWithValue("@userId", userId);
+        command.Parameters.AddWithValue("@days", days);
         using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {

@@ -21,6 +21,8 @@ public interface IUserService
     Task<int> GetUserIdFromTokenAsync(string token);
     Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus);
     Task<bool> DeleteUserAccountAsync(int userId);
+    Task<bool> UpdatePasswordAsync(int userId, string currentPassword, string newPassword);
+    Task<string?> GetUserPasswordByIdAsync(int userId);
 
 
 }
@@ -114,5 +116,14 @@ public class UserService : IUserService
         return await _userRepository.DeleteUserAccountAsync(userId);
     }
 
+    public async Task<bool> UpdatePasswordAsync(int userId, string currentPassword, string newPassword)
+    {
+        return await _userRepository.UpdatePasswordAsync(userId, currentPassword, newPassword);
+    }
+
+    public async Task<string?> GetUserPasswordByIdAsync(int userId)
+    {
+        return await _userRepository.GetUserPasswordByIdAsync(userId);
+    }
 
 }

@@ -22,6 +22,8 @@ public interface IUserRepository
     Task<string?> GetUserAvatarAsync(int userId);
     Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus);
     Task<bool> DeleteUserAccountAsync(int userId);
+    Task<bool> UpdatePasswordAsync(int userId, string currentPassword, string newPassword);
+    Task<string?> GetUserPasswordByIdAsync(int userId);
 
 
 }
@@ -492,6 +494,48 @@ public class UserRepository : IUserRepository
                     throw new Exception($"Fout bij verwijderen van gebruiker: {ex.Message}", ex);
                 }
             }
+        }
+    }
+
+
+    public async Task<bool> UpdatePasswordAsync(int userId, string currentPassword, string newPassword)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+
+            // Verkrijg het opgeslagen gehashte wachtwoord uit de database
+            var command = new MySqlCommand("SELECT userPassword FROM User WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@userId", userId);
+
+            var storedHashedPassword = (string?)await command.ExecuteScalarAsync();
+            if (storedHashedPassword == null || !BCrypt.Net.BCrypt.Verify(currentPassword, storedHashedPassword))
+            {
+                return false; // Huidige wachtwoord klopt niet
+            }
+
+            // Nieuwe wachtwoord hashen
+            var hashedNewPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+            // Bijwerken van het wachtwoord in de database
+            var updateCommand = new MySqlCommand("UPDATE User SET userPassword = @newPassword WHERE userId = @userId", connection);
+            updateCommand.Parameters.AddWithValue("@newPassword", hashedNewPassword);
+            updateCommand.Parameters.AddWithValue("@userId", userId);
+
+            var result = await updateCommand.ExecuteNonQueryAsync();
+            return result > 0; // Als er rijen zijn bijgewerkt, is de update geslaagd
+        }
+    }
+
+    public async Task<string?> GetUserPasswordByIdAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var command = new MySqlCommand("SELECT userPassword FROM User WHERE userId = @userId", connection);
+            command.Parameters.AddWithValue("@userId", userId);
+            var result = await command.ExecuteScalarAsync();
+            return result?.ToString();
         }
     }
 

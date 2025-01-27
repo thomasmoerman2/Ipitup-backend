@@ -74,7 +74,7 @@ public class UserRepository : IUserRepository
         {
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM User WHERE userEmail = @email", connection);
-            command.Parameters.AddWithValue("@email", email.ToLower());
+            command.Parameters.AddWithValue("@email", email);
             using (var reader = await command.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
@@ -397,13 +397,20 @@ public class UserRepository : IUserRepository
         using (var connection = new MySqlConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var command = new MySqlCommand("UPDATE `User` SET userFirstname=@userFirstname,userLastname=@userLastname, userEmail=@userEmail, birthDate=@birthDate WHERE userId=@userId", connection);
+            var command = new MySqlCommand("UPDATE User SET userFirstname=@userFirstname,userLastname=@userLastname, userEmail=@userEmail WHERE userId=@userId", connection);
+            command.Parameters.AddWithValue("@userId", userId);
             command.Parameters.AddWithValue("@userFirstname", user.UserFirstname);
             command.Parameters.AddWithValue("@userLastname", user.UserLastname);
-            command.Parameters.AddWithValue("@userEmail", user.UserEmail);
-            command.Parameters.AddWithValue("@birthDate", user.BirthDate);
-            command.Parameters.AddWithValue("@userId", userId);
-            return await command.ExecuteNonQueryAsync() > 0;
+            command.Parameters.AddWithValue("@userEmail", user.UserEmail.ToLower());
+            var result = await command.ExecuteNonQueryAsync();
+            if (result > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
     public async Task<int> GetUserIdFromTokenAsync(string token)

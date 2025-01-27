@@ -393,6 +393,7 @@ namespace Ipitup.Functions
             {
                 return new BadRequestObjectResult(new { message = "Invalid JSON format" });
             }
+
             var result = await _userService.UpdateUserAsync(userId, userRequest);
             if (!result)
             {

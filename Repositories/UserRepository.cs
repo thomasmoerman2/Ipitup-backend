@@ -21,6 +21,8 @@ public interface IUserRepository
     Task<int> GetUserIdFromTokenAsync(string token);
     Task<string?> GetUserAvatarAsync(int userId);
     Task<bool> UpdateUserAccountStatusAsync(int userId, AccountStatus accountStatus);
+    Task<bool> DeleteUserAccountAsync(int userId);
+
 
 }
 public class UserRepository : IUserRepository
@@ -450,5 +452,49 @@ public class UserRepository : IUserRepository
             return await command.ExecuteNonQueryAsync() > 0;
         }
     }
+
+    public async Task<bool> DeleteUserAccountAsync(int userId)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            using (var transaction = await connection.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Verwijder records uit AuthToken tabel
+                    var deleteTokensCommand = new MySqlCommand(
+                        "DELETE FROM AuthToken WHERE userId = @userId", connection, (MySqlTransaction)transaction);
+                    deleteTokensCommand.Parameters.AddWithValue("@userId", userId);
+                    await deleteTokensCommand.ExecuteNonQueryAsync();
+
+                    // Controleer of er nog andere gerelateerde tabellen zijn (bijv. activiteiten, badges, etc.)
+                    var deleteActivitiesCommand = new MySqlCommand(
+                        "DELETE FROM Activity WHERE userId = @userId", connection, (MySqlTransaction)transaction);
+                    deleteActivitiesCommand.Parameters.AddWithValue("@userId", userId);
+                    await deleteActivitiesCommand.ExecuteNonQueryAsync();
+
+                    // Voeg indien nodig andere DELETE statements toe voor tabellen met een foreign key
+
+                    // Verwijder de gebruiker zelf
+                    var deleteUserCommand = new MySqlCommand(
+                        "DELETE FROM User WHERE userId = @userId", connection, (MySqlTransaction)transaction);
+                    deleteUserCommand.Parameters.AddWithValue("@userId", userId);
+                    var rowsAffected = await deleteUserCommand.ExecuteNonQueryAsync();
+
+                    await transaction.CommitAsync();
+
+                    return rowsAffected > 0;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw new Exception($"Fout bij verwijderen van gebruiker: {ex.Message}", ex);
+                }
+            }
+        }
+    }
+
+
 
 }

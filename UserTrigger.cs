@@ -632,5 +632,42 @@ namespace Ipitup.Functions
             }
             return new OkObjectResult(formattedFollowers);
         }
+
+
+        [Function("DeleteUserAccount")]
+        public async Task<IActionResult> DeleteUserAccount(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "user/delete")] HttpRequest req)
+        {
+            try
+            {
+                string? authHeader = req.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+                }
+
+                string token = authHeader.Substring("Bearer ".Length);
+                int userId = await _userService.GetUserIdFromTokenAsync(token);
+
+                if (userId == 0)
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                }
+
+                bool isDeleted = await _userService.DeleteUserAccountAsync(userId);
+                if (!isDeleted)
+                {
+                    return new BadRequestObjectResult(new { message = "Failed to delete user account" });
+                }
+
+                return new OkObjectResult(new { message = "Account successfully deleted" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting user account");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
     }
 }

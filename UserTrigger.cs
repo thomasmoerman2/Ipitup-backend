@@ -503,6 +503,7 @@ namespace Ipitup.Functions
                     firstname = user.UserFirstname,
                     lastname = user.UserLastname,
                     avatar = user.Avatar ?? string.Empty,
+                    dailyStreak = user.DailyStreak, 
                     isPending = follow?.Status == FollowStatus.Pending
                 });
             }

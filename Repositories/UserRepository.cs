@@ -74,7 +74,7 @@ public class UserRepository : IUserRepository
         {
             await connection.OpenAsync();
             var command = new MySqlCommand("SELECT * FROM User WHERE userEmail = @email", connection);
-            command.Parameters.AddWithValue("@email", email);
+            command.Parameters.AddWithValue("@email", email.ToLower());
             using (var reader = await command.ExecuteReaderAsync())
             {
                 if (await reader.ReadAsync())
@@ -112,7 +112,7 @@ public class UserRepository : IUserRepository
             Console.WriteLine($"Processing user: {user.UserEmail}, {user.UserFirstname}, {user.UserLastname}, {user.BirthDate}, {user.AccountStatus}, {user.DailyStreak}, {user.TotalScore}");
             await connection.OpenAsync();
             var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, birthDate, accountStatus, dailyStreak, totalScore) VALUES (@email, @password, @firstname, @lastname, @birthdate, @accountStatus, @dailyStreak, @totalScore)", connection);
-            command.Parameters.AddWithValue("@email", user.UserEmail);
+            command.Parameters.AddWithValue("@email", user.UserEmail.ToLower());
             command.Parameters.AddWithValue("@password", user.UserPassword);
             command.Parameters.AddWithValue("@firstname", user.UserFirstname);
             command.Parameters.AddWithValue("@lastname", user.UserLastname);

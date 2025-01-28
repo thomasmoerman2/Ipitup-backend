@@ -742,5 +742,55 @@ namespace Ipitup.Functions
         }
 
 
+
+        [Function("UpdateUserDailyStreak")]
+        public async Task<IActionResult> UpdateUserDailyStreak(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "user/dailystreak/{id}")] HttpRequest req, string id)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(id) || id == "0")
+                {
+                    return new BadRequestObjectResult(new { message = "Invalid ID format. It must be a number greater than 0." });
+                }
+
+                var authHeader = req.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid authorization header" });
+                }
+
+                var token = authHeader.Substring("Bearer ".Length);
+                if (!await _userService.VerifyAuthTokenAsync(token))
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                }
+
+                var userIdFromToken = await _userService.GetUserIdFromTokenAsync(token);
+                if (userIdFromToken == 0)
+                {
+                    return new UnauthorizedObjectResult(new { message = "Invalid or expired token" });
+                }
+
+                var userId = int.Parse(id);
+                var newDailyStreak = await _userService.UpdateUserDailyStreakAsync(userId);
+
+                if (newDailyStreak == 0)
+                {
+                    return new NotFoundObjectResult(new { message = "User not found or failed to update daily streak" });
+                }
+
+                return new OkObjectResult(new
+                {
+                    message = "Daily streak updated successfully",
+                    dailyStreak = newDailyStreak
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating daily streak");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 }

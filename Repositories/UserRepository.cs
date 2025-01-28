@@ -24,16 +24,18 @@ public interface IUserRepository
     Task<bool> DeleteUserAccountAsync(int userId);
     Task<bool> UpdatePasswordAsync(int userId, string currentPassword, string newPassword);
     Task<string?> GetUserPasswordByIdAsync(int userId);
-
+    Task<int> UpdateUserDailyStreakAsync(int userId);
 
 }
 public class UserRepository : IUserRepository
 {
     private readonly string _connectionString;
-    public UserRepository()
+    private readonly IActivityRepository _activityRepository;
+    public UserRepository(IActivityRepository activityRepository)
     {
         _connectionString = Environment.GetEnvironmentVariable("SQLConnectionString")
                             ?? throw new InvalidOperationException("Database connection string is not set.");
+        _activityRepository = activityRepository;
     }
     public async Task<bool> CheckConnection()
     {
@@ -539,6 +541,81 @@ public class UserRepository : IUserRepository
         }
     }
 
+    public async Task<int> UpdateUserDailyStreakAsync(int userId)
+    {
+        try
+        {
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
 
+                // First check if user exists
+                var userCheckCommand = new MySqlCommand("SELECT dailyStreak FROM User WHERE userId = @userId", connection);
+                userCheckCommand.Parameters.AddWithValue("@userId", userId);
+                var userExists = await userCheckCommand.ExecuteScalarAsync();
 
+                if (userExists == null)
+                {
+                    return 0; // User not found
+                }
+
+                // Get the last activity
+                var command = new MySqlCommand(@"
+                    SELECT ActivityDate 
+                    FROM Activity 
+                    WHERE UserId = @userId 
+                    ORDER BY ActivityDate DESC 
+                    LIMIT 1", connection);
+                command.Parameters.AddWithValue("@userId", userId);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    int newDailyStreak;
+
+                    if (await reader.ReadAsync() && !reader.IsDBNull(reader.GetOrdinal("ActivityDate")))
+                    {
+                        var lastActivityDate = reader.GetDateTime(reader.GetOrdinal("ActivityDate")).Date;
+                        var today = DateTime.Now.Date;
+
+                        if (lastActivityDate == today)
+                        {
+                            // Activity today - keep current streak
+                            newDailyStreak = Convert.ToInt32(userExists);
+                        }
+                        else if (lastActivityDate == today.AddDays(-1))
+                        {
+                            // Activity was yesterday - increment streak
+                            newDailyStreak = Convert.ToInt32(userExists) + 1;
+                        }
+                        else
+                        {
+                            // No activity yesterday - reset streak
+                            newDailyStreak = 1;
+                        }
+                    }
+                    else
+                    {
+                        // No activities found - reset streak
+                        newDailyStreak = 0;
+                    }
+
+                    reader.Close();
+
+                    // Update the streak
+                    var updateCommand = new MySqlCommand(
+                        "UPDATE User SET dailyStreak = @dailyStreak WHERE userId = @userId",
+                        connection);
+                    updateCommand.Parameters.AddWithValue("@dailyStreak", newDailyStreak);
+                    updateCommand.Parameters.AddWithValue("@userId", userId);
+
+                    var rowsAffected = await updateCommand.ExecuteNonQueryAsync();
+                    return rowsAffected > 0 ? newDailyStreak : 0;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error updating daily streak for user ID {userId}: {ex.Message}", ex);
+        }
+    }
 }

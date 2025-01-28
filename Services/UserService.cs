@@ -23,6 +23,7 @@ public interface IUserService
     Task<bool> DeleteUserAccountAsync(int userId);
     Task<bool> UpdatePasswordAsync(int userId, string currentPassword, string newPassword);
     Task<string?> GetUserPasswordByIdAsync(int userId);
+    Task<int> UpdateUserDailyStreakAsync(int userId);
 
 
 }
@@ -126,4 +127,8 @@ public class UserService : IUserService
         return await _userRepository.GetUserPasswordByIdAsync(userId);
     }
 
+    public async Task<int> UpdateUserDailyStreakAsync(int userId)
+    {
+        return await _userRepository.UpdateUserDailyStreakAsync(userId);
+    }
 }

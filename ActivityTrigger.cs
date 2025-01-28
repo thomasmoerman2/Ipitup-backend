@@ -17,7 +17,7 @@ public class ActivityTrigger
     }
     [Function("PostActivity")]
     public async Task<IActionResult> PostActivity(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activity/add")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activities/add")] HttpRequest req)
     {
         _logger.LogInformation("PostActivity function triggered");
         try
@@ -47,7 +47,7 @@ public class ActivityTrigger
     }
     [Function("UpdateActivityById")]
     public async Task<IActionResult> UpdateActivityById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "activity/update")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "activities/update")] HttpRequest req)
     {
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var activityRequest = JsonConvert.DeserializeObject<Activity>(requestBody);
@@ -64,7 +64,7 @@ public class ActivityTrigger
     }
     [Function("RemoveActivityById")]
     public async Task<IActionResult> RemoveActivityById(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activity/remove")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activities/remove")] HttpRequest req)
     {
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var activityRequest = JsonConvert.DeserializeObject<Activity>(requestBody);
@@ -82,8 +82,8 @@ public class ActivityTrigger
 
     [Function("GetActivitiesByUserId")]
     public async Task<IActionResult> GetActivitiesByUserId(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/total/{userId}/{days?}")] HttpRequest req, 
-        string userId, 
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities/user/total/{userId}/{days?}")] HttpRequest req,
+        string userId,
         string? days)
     {
         if (!int.TryParse(userId, out int userid))

@@ -82,7 +82,7 @@ public class ActivityTrigger
 
     [Function("GetActivitiesByUserId")]
     public async Task<IActionResult> GetActivitiesByUserId(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities/user/total/{userId}/{days?}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activity/user/total/{userId}/{days?}")] HttpRequest req,
         string userId,
         string? days)
     {

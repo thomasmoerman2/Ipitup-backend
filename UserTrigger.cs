@@ -1,5 +1,5 @@
 namespace Ipitup.Functions
-{   
+{
     public class UserTrigger
     {
         private readonly ILogger<UserTrigger> _logger;
@@ -422,9 +422,9 @@ namespace Ipitup.Functions
 
             return new OkObjectResult(new { avatar = user.Avatar });
         }
-        
 
-        
+
+
         [Function("GetUserByIdLimited")]
         public async Task<IActionResult> GetUserByIdLimited(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/info/{id}")] HttpRequest req, string id)
@@ -517,7 +517,7 @@ namespace Ipitup.Functions
                     firstname = user.UserFirstname,
                     lastname = user.UserLastname,
                     avatar = user.Avatar ?? string.Empty,
-                    dailyStreak = user.DailyStreak, 
+                    dailyStreak = user.DailyStreak,
                     isPending = follow?.Status == FollowStatus.Pending
                 });
             }

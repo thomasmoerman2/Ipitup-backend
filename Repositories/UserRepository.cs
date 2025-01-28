@@ -115,13 +115,15 @@ public class UserRepository : IUserRepository
             //log the user data
             Console.WriteLine($"Processing user: {user.UserEmail}, {user.UserFirstname}, {user.UserLastname}, {user.BirthDate}, {user.AccountStatus}, {user.DailyStreak}, {user.TotalScore}");
             await connection.OpenAsync();
-            var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, avatar, birthDate, accountStatus) VALUES (@email, @password, @firstname, @lastname, @avatar, @birthdate, @accountStatus)", connection);
-            command.Parameters.AddWithValue("@email", user.UserEmail);
+            var command = new MySqlCommand("INSERT INTO User (userEmail, userPassword, userFirstname, userLastname, birthDate, accountStatus, dailyStreak, totalScore) VALUES (@email, @password, @firstname, @lastname, @birthdate, @accountStatus, @dailyStreak, @totalScore)", connection);
+            command.Parameters.AddWithValue("@email", user.UserEmail.ToLower());
             command.Parameters.AddWithValue("@password", user.UserPassword);
             command.Parameters.AddWithValue("@firstname", user.UserFirstname);
             command.Parameters.AddWithValue("@lastname", user.UserLastname);
             command.Parameters.AddWithValue("@birthdate", user.BirthDate);
-            command.Parameters.AddWithValue("@accountStatus", user.AccountStatus);
+            command.Parameters.AddWithValue("@accountStatus", user.AccountStatus == AccountStatus.Public ? "Public" : "Private");
+            command.Parameters.AddWithValue("@dailyStreak", user.DailyStreak);
+            command.Parameters.AddWithValue("@totalScore", user.TotalScore);
             var result = await command.ExecuteNonQueryAsync();
             if (result > 0)
             {
